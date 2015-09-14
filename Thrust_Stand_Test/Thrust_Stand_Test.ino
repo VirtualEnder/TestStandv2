@@ -75,14 +75,17 @@ void saveFloatToEEPROM(float toSave,int address)
 }
 // the setup routine runs once when you press reset:
 void setup() {
-  // initialize serial communication at 9600 bits per second:
-  Serial.begin(230400);
+  
+  // initialize serial communication:
+  Serial.begin(460800);
+  
   // make the pushbutton's pin an input:
   pinMode(datPin, INPUT);
   pinMode(clkPin,OUTPUT);
   pinMode(potHigh,OUTPUT);
   pinMode(potLow,OUTPUT);
   pinMode(probePowerHigh,OUTPUT);
+  
   //attach ESC servo output
   ESC.attach(ESCPin,1050,1990);
   
@@ -100,7 +103,7 @@ void setup() {
   tare = readFloatFromEEPROM(0);
   calibration=readFloatFromEEPROM(4);  
   
-  initTimer(80);
+  initTimer(120);
 }
 
 float readPot()
