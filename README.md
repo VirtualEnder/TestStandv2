@@ -1,4 +1,4 @@
-# TestStandv2
+# Smart Turnigy Thrust Stand 
 Thrust, voltage, amperage, and RPM sensing designed to replace the internal electronics in the Turnigy Thrust stand. Code is for the Stellaris Launchpad, but should also work fine on the Tiva C launchpad. 
 
 ## Sample Rates
