@@ -1,5 +1,5 @@
 # Smart Turnigy Thrust Stand 
-Thrust, voltage, amperage, and RPM sensing designed to replace the internal electronics in the Turnigy Thrust stand. Code is for the Stellaris Launchpad, but should also work fine on the Tiva C launchpad. It may also work for Arduino with a bit of reworking on the timer code, though I can't guarantee what the cycle time will be.
+Thrust, voltage, amperage, and RPM sensing designed to replace the internal electronics in the Turnigy Thrust stand. Code is for the Stellaris Launchpad, but should also work fine on the Tiva C launchpad. It may also work for Arduino with a bit of reworking on the timer code, though I can't guarantee what the cycle time will be.  Thanks to zdayton at Dayton RotorCross for the initial schematic and code: http://www.davisrotorcross.org/2015/09/09/adding-data-logging-to-the-turnigy-thrust-test-stand/
 
 ## Sample Rates
 Currently the RPM sample rate depends on your serial output rate.  At 115200 baud, sample rate is ~2ms, at 230400 ~1ms, and at 460800 ~600us.  Voltage (analog in), Amperage (analog in) and Thrust (load cell amp) are measured via a timer at a configurable rate.  The load cell amp refreshes at 80hz, but the timer can be set faster to get higher resolution analog reads.  Setting the timer to a very fast refresh rate may impact analog read accuracy.
