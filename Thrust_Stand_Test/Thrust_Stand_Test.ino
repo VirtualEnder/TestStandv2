@@ -160,8 +160,8 @@ void loop() {
     input="";
     Serial.println("Begining free run, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
-    startTime=millis();
+    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(us)");
+    startTime=micros();
     isTestRunning = true;
     while(!Serial.available()) {
       throttle=readPot();
@@ -182,7 +182,7 @@ void loop() {
       currentMicros = micros();
       Serial.print(diffMicros);*/
       Serial.print(",");
-      Serial.println(millis()-startTime);
+      Serial.println(micros()-startTime);
     }
     while(Serial.available()) {
         character = Serial.read();
@@ -194,23 +194,23 @@ void loop() {
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
     Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
-    startTime=millis();
+    startTime=micros();
     isTestRunning = true;
-    while(!Serial.available() && (millis()-startTime)<18000) {  
-      if((millis()-startTime)<2000)
+    while(!Serial.available() && (micros()-startTime)<18000000) {  
+      if((micros()-startTime)<2000000)
         throttle=0.25;
-      else if((millis()-startTime)<4000)
+      else if((micros()-startTime)<4000000)
         throttle=0.1;
-      else if((millis()-startTime)<6000)
+      else if((micros()-startTime)<6000000)
         throttle=0.50;
-      else if((millis()-startTime)<8000)
+      else if((micros()-startTime)<8000000)
         throttle=0.1;
-      else if((millis()-startTime)<10000)
+      else if((micros()-startTime)<10000000)
         throttle=1.0;
-      else if((millis()-startTime)<12000)
+      else if((micros()-startTime)<12000000)
         throttle=0.0;
-      else if((millis()-startTime)<18000)
-        throttle=(float)(millis()-startTime-12000)/6000.0;
+      else if((micros()-startTime)<18000000)
+        throttle=(float)(micros()-startTime-12000000)/6000000.0;
       else
         throttle=0.0;
       setThrottle();
@@ -230,7 +230,7 @@ void loop() {
       currentMicros = micros();
       Serial.print(diffMicros);*/
       Serial.print(",");
-      Serial.println(millis()-startTime);
+      Serial.println(micros()-startTime);
     }
     while(Serial.available()) {
         character = Serial.read();
