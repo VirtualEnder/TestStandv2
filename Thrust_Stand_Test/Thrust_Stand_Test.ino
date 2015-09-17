@@ -237,7 +237,13 @@ void loop() {
         delay(1);
     }
   }
-  delay(3);        // delay in between reads for stability
+  // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
+  // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
+  // the serial delay to get more stable cycle times.
+  // 115200 = 2.5ms cycle
+  // 230400 = 1.1ms cycle
+  // 460800 = 600us cycle
+  delay(3);        
 }
 
 void initTimer0 (unsigned Hz) { 
