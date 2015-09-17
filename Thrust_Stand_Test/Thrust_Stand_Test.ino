@@ -15,7 +15,6 @@ int voltagePin=A0;
 int currentPin=A1;
 int potentiometerPin=A2;
 int ESCPin=12;
-int probeVOfsPin=A3;
 int currentMicros = 0;
 boolean isTestRunning = false;
 
