@@ -14,10 +14,7 @@
 int voltagePin=A0;
 int currentPin=A1;
 int potentiometerPin=A2;
-int potHigh=7;
-int potLow=6;
 int ESCPin=12;
-int probePowerHigh=5;
 int probeVOfsPin=A3;
 int currentMicros = 0;
 boolean isTestRunning = false;
@@ -34,7 +31,6 @@ volatile int rpmCount2 = 0;
 // analog value variables
 volatile int voltageValue = 0;
 volatile int currentValue = 0;
-volatile int erpmValue = 0;
 volatile int thrust = 0;
 
 Servo ESC;
@@ -83,11 +79,6 @@ void setup() {
   // initialize serial communication:
   Serial.begin(115200);
   
-  // make the pushbutton's pin an input:
-  pinMode(potHigh,OUTPUT);
-  pinMode(potLow,OUTPUT);
-  pinMode(probePowerHigh,OUTPUT);
-  
   //attach ESC servo output
   ESC.attach(ESCPin,1000,2000);
   ESC.write(0);  // Ensure throttle is at 0
@@ -98,25 +89,18 @@ void setup() {
   pinMode(PUSH2, INPUT_PULLUP);
   attachInterrupt(PUSH2, countRpms2, FALLING);
   
-  //high and low legs of the pot, because there aren't enough 5v and gnd pins on the uno
-  digitalWrite(potHigh,1);
-  digitalWrite(potLow,0);
-  digitalWrite(probePowerHigh,1);
-  
   calibration=readFloatFromEEPROM(4);  
   
-  scale.set_scale(-430);
+  scale.set_scale(-430);  //Eventually set this via EEPROM
   scale.tare();	//Reset the scale to 0
   
-  initTimer0(45);
+  initTimer0(45);     //Start Timer loop for Load Cell Reading
 }
 
-float readPot()
-{
+float readPot() {
   return (float)analogRead(potentiometerPin)/4096.0f;
 }
-void setThrottle()
-{
+void setThrottle() {
   ESC.write((int)(throttle*180.0f));
 }
 
@@ -129,40 +113,39 @@ void countRpms2 () {
 }
 // the loop routine runs over and over again forever:
 void loop() {
+  
+  isTestRunning = false;  //Stop reads from load cell
+  
   ESC.write(0);  //Double check throttle is at 0
+  
+  // Prompt for input and read it
   Serial.println("Type Tare, Calibrate, Start, or Free");
-  isTestRunning = false;
   input="";
   while(!Serial.available());
-  while(Serial.available())
-  {
+  while(Serial.available()) {
       character = Serial.read();
       input.concat(character);
       delay(1);
   }
-  
   Serial.print("Input: ");
   Serial.println(input);
   
-  if(input.indexOf("Tare") >= 0)
-  {
+  //Check input
+  if(input.indexOf("Tare") >= 0) {
     input="";
     Serial.println("Taring");
     scale.tare();
   }
-  if(input.indexOf("Calibrate") >= 0)
-  {
+  if(input.indexOf("Calibrate") >= 0) {
     input="";
     Serial.println("You must Tare before calibrating.  To exit calibration without saving a new value, type Exit. Otherwise enter the calibration mass in grams, without units");
     while(!Serial.available());
-    while(Serial.available())
-    {
+    while(Serial.available()) {
         character = Serial.read();
         input.concat(character);
         delay(1);
     }
-    if(input.indexOf("Exit") < 0)
-    {
+    if(input.indexOf("Exit") < 0) {
       calibrationmass=input.toInt();
       Serial.print("Calibration mass: ");
       Serial.println(calibrationmass);
@@ -173,17 +156,14 @@ void loop() {
       Serial.println(scale.get_units());
     }
   }
-  if(input.indexOf("Free") >= 0)
-  {
-    
+  if(input.indexOf("Free") >= 0) {
     input="";
     Serial.println("Begining free run, press any key to exit");
     delay(2000);
     Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
     startTime=millis();
     isTestRunning = true;
-    while(!Serial.available())
-    {
+    while(!Serial.available()) {
       throttle=readPot();
       setThrottle();
       Serial.print(thrust);
@@ -204,22 +184,19 @@ void loop() {
       Serial.print(",");
       Serial.println(millis()-startTime);
     }
-    while(Serial.available())
-    {
+    while(Serial.available()) {
         character = Serial.read();
         delay(1);
     }
   }
-  if(input.indexOf("Start") >= 0)
-  {
+  if(input.indexOf("Start") >= 0) {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
     Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
     startTime=millis();
     isTestRunning = true;
-    while(!Serial.available() && (millis()-startTime)<18000)
-    {  
+    while(!Serial.available() && (millis()-startTime)<18000) {  
       if((millis()-startTime)<2000)
         throttle=0.25;
       else if((millis()-startTime)<4000)
@@ -255,8 +232,7 @@ void loop() {
       Serial.print(",");
       Serial.println(millis()-startTime);
     }
-    while(Serial.available())
-    {
+    while(Serial.available()) {
         character = Serial.read();
         delay(1);
     }
@@ -281,7 +257,6 @@ void Timer0IntHandler() {
   if(isTestRunning) {
     voltageValue = analogRead(voltagePin);
     currentValue = analogRead(currentPin);
-    erpmValue = analogRead(eRPMPin);
     if(scale.is_ready()){
       thrust = scale.get_units();
     }
