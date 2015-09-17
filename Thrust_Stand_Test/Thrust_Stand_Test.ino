@@ -1,4 +1,3 @@
-
 #include "Energia.h" 
 #include "inc/hw_memmap.h" 
 #include "inc/hw_types.h" 
@@ -7,12 +6,11 @@
 #include "driverlib/interrupt.h" 
 #include "driverlib/sysctl.h" 
 #include "driverlib/timer.h" //See more at: http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/#sthash.VheM8bk6.dpuf
+#include "HX711.h"
 #include <EEPROM.h>
 #include <Servo.h> 
 
 //IO pins
-int datPin = 9;
-int clkPin=8;
 int voltagePin=A0;
 int currentPin=A1;
 int potentiometerPin=A2;
@@ -22,15 +20,23 @@ int ESCPin=12;
 int probePowerHigh=5;
 int probeVOfsPin=A3;
 int currentMicros = 0;
+int eRPMPin = A4;
+boolean isTestRunning = false;
+
+// Scale Pins
+// HX711.DOUT	- pin #9
+// HX711.PD_SCK	- pin #8
+HX711 scale(9, 8);	
 
 // RPM pins
 volatile int rpmCount = 0;
 volatile int rpmCount2 = 0;
 
 // analog value variables
-int voltageValue = 0;
-int currentValue = 0;
-int thrust = 0;
+volatile int voltageValue = 0;
+volatile int currentValue = 0;
+volatile int erpmValue = 0;
+volatile int thrust = 0;
 
 Servo ESC;
 char character;
@@ -77,17 +83,16 @@ void saveFloatToEEPROM(float toSave,int address)
 void setup() {
   
   // initialize serial communication:
-  Serial.begin(460800);
+  Serial.begin(115200);
   
   // make the pushbutton's pin an input:
-  pinMode(datPin, INPUT);
-  pinMode(clkPin,OUTPUT);
   pinMode(potHigh,OUTPUT);
   pinMode(potLow,OUTPUT);
   pinMode(probePowerHigh,OUTPUT);
   
   //attach ESC servo output
-  ESC.attach(ESCPin,1050,1990);
+  ESC.attach(ESCPin,1000,2000);
+  ESC.write(0);
   
   //attach Interupt for RPM sensor
   pinMode(PUSH1, INPUT_PULLUP);
@@ -103,7 +108,10 @@ void setup() {
   tare = readFloatFromEEPROM(0);
   calibration=readFloatFromEEPROM(4);  
   
-  initTimer(120);
+  scale.set_scale(-430);
+  scale.tare();	//Reset the scale to 0
+  
+  initTimer(45);
 }
 
 float readPot()
@@ -114,27 +122,6 @@ void setThrottle()
 {
   ESC.write((int)(throttle*180.0f));
 }
-
-float readLoadCell()
-{
-  unsigned long load=0;
-  float loadOut;
-  while(digitalRead(datPin));
-  for(char i=0;i<24;i++)
-  {
-    digitalWrite(clkPin,1);
-    load=load<<1;
-    digitalWrite(clkPin,0);
-    if(digitalRead(datPin))
-      load++;
-  }
-  digitalWrite(clkPin,1);
-  load=load^0x800000;
-  loadOut = (float)load/128.0f;
-  digitalWrite(clkPin,0);
-  return loadOut;
-}
-
 
 void countRpms () {
   rpmCount++;
@@ -147,6 +134,7 @@ void countRpms2 () {
 void loop() {
   ESC.write(0);
   Serial.println("Type Tare, Calibrate, Start, or Free");
+  isTestRunning = false;
   input="";
   while(!Serial.available());
   while(Serial.available())
@@ -156,15 +144,15 @@ void loop() {
       delay(1);
   }
   
-  //Serial.print("Input: ");
-  //Serial.println(input);
+  Serial.print("Input: ");
+  Serial.println(input);
   
   if(input.indexOf("Tare") >= 0)
   {
     input="";
     Serial.println("Taring");
-    tare=readLoadCell();
-    saveFloatToEEPROM(tare,0);
+    tare=scale.read();
+    scale.tare();
   }
   if(input.indexOf("Calibrate") >= 0)
   {
@@ -182,19 +170,22 @@ void loop() {
       calibrationmass=input.toInt();
       Serial.print("Calibration mass: ");
       Serial.println(calibrationmass);
-      calibration=(float)calibrationmass/(readLoadCell()-tare);
+      calibration=(float)calibrationmass/(scale.get_units());
+      scale.set_scale(calibration);
       saveFloatToEEPROM(calibration,4);
       Serial.print("New measured mass: ");
-      Serial.println((readLoadCell()-tare)*calibration);
+      Serial.println(scale.get_units());
     }
   }
   if(input.indexOf("Free") >= 0)
   {
+    
     input="";
     Serial.println("Begining free run, press any key to exit");
     delay(2000);
     Serial.println("Thrust(g),Voltage,Current,oRotations,eRotations,Throttle(%),Time(ms)");
     startTime=millis();
+    isTestRunning = true;
     while(!Serial.available())
     {
       throttle=readPot();
@@ -230,6 +221,7 @@ void loop() {
     delay(2000);
     Serial.println("Thrust(g),Voltage,Current,oRotations,eRotations,Throttle(%),Cycle(ms),Time(ms)");
     startTime=millis();
+    isTestRunning = true;
     while(!Serial.available() && (millis()-startTime)<18000)
     {  
       if((millis()-startTime)<2000)
@@ -270,10 +262,10 @@ void loop() {
     while(Serial.available())
     {
         character = Serial.read();
-        delayMicroseconds(200);
+        delay(1);
     }
   }
-  //delayMicroseconds(200);        // delay in between reads for stability
+  delayMicroseconds(15);        // delay in between reads for stability
 }
 
 void initTimer (unsigned Hz) { 
@@ -289,9 +281,11 @@ void initTimer (unsigned Hz) {
 }
 
 void Timer0IntHandler() {
-  TimerIntClear (TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-  voltageValue = analogRead(voltagePin);
-  currentValue = analogRead(currentPin);
-  thrust = (readLoadCell()-tare)*calibration;
+  TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+  if(isTestRunning) {
+    voltageValue = analogRead(voltagePin);
+    currentValue = analogRead(currentPin);
+    erpmValue = analogRead(eRPMPin);
+    thrust = scale.get_units();
+  }
 }
-
