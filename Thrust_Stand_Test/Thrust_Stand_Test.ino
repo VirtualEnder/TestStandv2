@@ -20,7 +20,6 @@ int ESCPin=12;
 int probePowerHigh=5;
 int probeVOfsPin=A3;
 int currentMicros = 0;
-int eRPMPin = A4;
 boolean isTestRunning = false;
 
 // Scale Pins
@@ -42,7 +41,6 @@ Servo ESC;
 char character;
 String input;
 String calibrationWeight;
-float tare=0;
 float calibration;
 int calibrationmass;
 float throttle;
@@ -60,7 +58,7 @@ float readFloatFromEEPROM(int address)
   {
     u.b[i]=EEPROM.read(address+i);
   }
-  //if the read flaot is nan, clear the eeprom
+  //if the read float is nan, clear the eeprom
   if(u.fval!=u.fval)
   {
     EEPROM.write(address,0);
@@ -92,7 +90,7 @@ void setup() {
   
   //attach ESC servo output
   ESC.attach(ESCPin,1000,2000);
-  ESC.write(0);
+  ESC.write(0);  // Ensure throttle is at 0
   
   //attach Interupt for RPM sensor
   pinMode(PUSH1, INPUT_PULLUP);
@@ -105,18 +103,17 @@ void setup() {
   digitalWrite(potLow,0);
   digitalWrite(probePowerHigh,1);
   
-  tare = readFloatFromEEPROM(0);
   calibration=readFloatFromEEPROM(4);  
   
   scale.set_scale(-430);
   scale.tare();	//Reset the scale to 0
   
-  initTimer(45);
+  initTimer0(45);
 }
 
 float readPot()
 {
-  return (float)analogRead(potentiometerPin)/1024.0f;
+  return (float)analogRead(potentiometerPin)/4096.0f;
 }
 void setThrottle()
 {
@@ -132,7 +129,7 @@ void countRpms2 () {
 }
 // the loop routine runs over and over again forever:
 void loop() {
-  ESC.write(0);
+  ESC.write(0);  //Double check throttle is at 0
   Serial.println("Type Tare, Calibrate, Start, or Free");
   isTestRunning = false;
   input="";
@@ -151,7 +148,6 @@ void loop() {
   {
     input="";
     Serial.println("Taring");
-    tare=scale.read();
     scale.tare();
   }
   if(input.indexOf("Calibrate") >= 0)
@@ -183,7 +179,7 @@ void loop() {
     input="";
     Serial.println("Begining free run, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,oRotations,eRotations,Throttle(%),Time(ms)");
+    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
     startTime=millis();
     isTestRunning = true;
     while(!Serial.available())
@@ -219,7 +215,7 @@ void loop() {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,oRotations,eRotations,Throttle(%),Cycle(ms),Time(ms)");
+    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
     startTime=millis();
     isTestRunning = true;
     while(!Serial.available() && (millis()-startTime)<18000)
@@ -265,10 +261,10 @@ void loop() {
         delay(1);
     }
   }
-  delayMicroseconds(15);        // delay in between reads for stability
+  delay(3);        // delay in between reads for stability
 }
 
-void initTimer (unsigned Hz) { 
+void initTimer0 (unsigned Hz) { 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
   //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
@@ -286,6 +282,8 @@ void Timer0IntHandler() {
     voltageValue = analogRead(voltagePin);
     currentValue = analogRead(currentPin);
     erpmValue = analogRead(eRPMPin);
-    thrust = scale.get_units();
+    if(scale.is_ready()){
+      thrust = scale.get_units();
+    }
   }
 }
