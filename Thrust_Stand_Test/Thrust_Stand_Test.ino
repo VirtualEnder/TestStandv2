@@ -93,7 +93,7 @@ void setup() {
   scale.set_scale(-430);  //Eventually set this via EEPROM
   scale.tare();	//Reset the scale to 0
   
-  initTimer0(45);     //Start Timer loop for Load Cell Reading
+  initTimer0(120);     //Start Timer loop for load cell and analog reads.
 }
 
 float readPot() {
