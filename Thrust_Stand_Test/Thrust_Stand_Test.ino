@@ -6,7 +6,7 @@
 #include "driverlib/interrupt.h" 
 #include "driverlib/sysctl.h" 
 #include "driverlib/timer.h" //See more at: http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/#sthash.VheM8bk6.dpuf
-#include "HX711.h"
+#include "HX711.h"           //Requires HX711 Library from: https://github.com/bogde/HX711
 #include <EEPROM.h>
 #include <Servo.h> 
 
