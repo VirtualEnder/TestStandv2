@@ -249,7 +249,7 @@ void initTimer0 (unsigned Hz) {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
   //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz) / 2; 
+  unsigned long ulPeriod = (SysCtlClockGet () / Hz); // Originally divided by 2, but seems to be doubling the HZ rate
   TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER0A); 
   TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT); 
