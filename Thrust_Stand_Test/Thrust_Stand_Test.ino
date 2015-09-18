@@ -5,6 +5,8 @@
 #include "driverlib/Debug.h" 
 #include "driverlib/interrupt.h" 
 #include "driverlib/sysctl.h" 
+#include "driverlib/adc.h"
+#include "driverlib/rom.h"
 #include "driverlib/timer.h" //See more at: http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/#sthash.VheM8bk6.dpuf
 #include "HX711.h"           //Requires HX711 Library from: https://github.com/bogde/HX711
 #include <EEPROM.h>
@@ -29,6 +31,8 @@ volatile int rpmCount = 0;
 volatile int rpmCount2 = 0;
 
 // analog value variables
+unsigned long ulADC0Value[8];
+volatile int ulADC0Avg;
 volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
@@ -271,7 +275,26 @@ void Timer0IntHandler() {
 }
 
 void initTimer1 (unsigned Hz) { 
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1); 
+  
+  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+  ROM_SysCtlADCSpeedSet(SYSCTL_ADCSPEED_250KSPS);
+  ROM_ADCHardwareOversampleConfigure(ADC0_BASE, 64);
+  ROM_ADCSequenceDisable(ADC0_BASE, 0);
+  
+  ROM_ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH0);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH0);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH0);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_CH1);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 5, ADC_CTL_CH1);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 6, ADC_CTL_CH1);
+  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 7, ADC_CTL_CH1 | ADC_CTL_IE | ADC_CTL_END);
+  ROM_ADCSequenceEnable(ADC0_BASE, 0);
+  ADCIntClear(ADC0_BASE, 0);
+
+
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
   //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
   unsigned long ulPeriod = (SysCtlClockGet () / Hz);
@@ -283,21 +306,16 @@ void initTimer1 (unsigned Hz) {
 }
 
 void Timer1IntHandler() {
-  TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+   
+
   if(isTestRunning) {
-    switch(lastRead) {
-      case 1:
-        voltageValue = analogRead(voltagePin);
-        lastRead = 2;
-        break;
-        
-      case 2:
-        currentValue = analogRead(currentPin);
-        lastRead = 1;
-        break;
-        
-      default:
-        break;
-    }
+   ROM_ADCIntClear(ADC0_BASE, 0);
+   ROM_ADCProcessorTrigger(ADC0_BASE, 0);
+   while(!ROM_ADCIntStatus(ADC0_BASE, 0, false)){}
+   ROM_ADCIntClear(ADC0_BASE, 0);
+   ROM_ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
+   voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
+   currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
   }
 }
