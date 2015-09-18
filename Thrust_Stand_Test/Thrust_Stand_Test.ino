@@ -16,7 +16,7 @@
 int voltagePin=A0;
 int currentPin=A1;
 int potentiometerPin=A2;
-int ESCPin=12;
+int ESCPin=36;
 int currentMicros = 0;
 int lastRead = 1;
 boolean isTestRunning = false;
@@ -85,7 +85,7 @@ void setup() {
   
   //attach ESC servo output
   ESC.attach(ESCPin,1000,2000);
-  ESC.write(0);  // Ensure throttle is at 0
+  ESC.writeMicroseconds(980);  // Ensure throttle is at 0
   
   //attach Interupt for RPM sensor
   pinMode(PUSH1, INPUT_PULLUP);
@@ -99,7 +99,7 @@ void setup() {
   scale.tare();	//Reset the scale to 0
   
   initTimer0(120);     //Start timer for load cell.
-  initTimer1(60);      //Start timer for analog reads.
+  initTimer1(240);      //Start timer for analog reads.
 }
 
 float readPot() {
@@ -113,12 +113,13 @@ void countRpms () {
 void countRpms2 () {
   rpmCount2++;
 }
+
 // the loop routine runs over and over again forever:
 void loop() {
   
   isTestRunning = false;  //Stop reads from load cell
   
-  ESC.write(0);  //Double check throttle is at 0
+  ESC.writeMicroseconds(980);  //Double check throttle is at 0
   
   // Prompt for input and read it
   Serial.println("Type Tare, Calibrate, Start, or Free");
@@ -254,6 +255,7 @@ void loop() {
 }
 
 void initTimer0 (unsigned Hz) { 
+  
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
   //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
@@ -271,29 +273,27 @@ void Timer0IntHandler() {
     if(scale.is_ready()){
       thrust = scale.get_units();
     }
-  }
+  } 
+
 }
 
 void initTimer1 (unsigned Hz) { 
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+  ADCHardwareOversampleConfigure(ADC0_BASE, 64);
+  ADCSequenceDisable(ADC0_BASE, 0);
   
-  ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-  ROM_SysCtlADCSpeedSet(SYSCTL_ADCSPEED_250KSPS);
-  ROM_ADCHardwareOversampleConfigure(ADC0_BASE, 64);
-  ROM_ADCSequenceDisable(ADC0_BASE, 0);
-  
-  ROM_ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH0);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH0);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH0);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_CH1);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 5, ADC_CTL_CH1);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 6, ADC_CTL_CH1);
-  ROM_ADCSequenceStepConfigure(ADC0_BASE, 0, 7, ADC_CTL_CH1 | ADC_CTL_IE | ADC_CTL_END);
-  ROM_ADCSequenceEnable(ADC0_BASE, 0);
+  ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH0);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH0);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH0);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_CH1);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 5, ADC_CTL_CH1);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 6, ADC_CTL_CH1);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 7, ADC_CTL_CH1 | ADC_CTL_IE | ADC_CTL_END);
+  ADCSequenceEnable(ADC0_BASE, 0);
   ADCIntClear(ADC0_BASE, 0);
-
-
+ 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
   //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
@@ -308,14 +308,16 @@ void initTimer1 (unsigned Hz) {
 void Timer1IntHandler() {
    TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
    
-
-  if(isTestRunning) {
-   ROM_ADCIntClear(ADC0_BASE, 0);
-   ROM_ADCProcessorTrigger(ADC0_BASE, 0);
-   while(!ROM_ADCIntStatus(ADC0_BASE, 0, false)){}
-   ROM_ADCIntClear(ADC0_BASE, 0);
-   ROM_ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
+  //if(isTestRunning) {
+   if(ADCIntStatus(ADC0_BASE, 0, false)){
+   ADCIntClear(ADC0_BASE, 0);
+   ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
    voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
    currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
-  }
+   } else {
+     ADCIntClear(ADC0_BASE, 0);
+     ADCProcessorTrigger(ADC0_BASE, 0);
+   }
+  //}
+  
 }
