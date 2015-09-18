@@ -76,7 +76,7 @@ void saveFloatToEEPROM(float toSave,int address)
 void setup() {
   
   // initialize serial communication:
-  Serial.begin(115200);
+  Serial.begin(230400);
   
   //attach ESC servo output
   ESC.attach(ESCPin,1000,2000);
@@ -98,9 +98,6 @@ void setup() {
 
 float readPot() {
   return (float)analogRead(potentiometerPin)/4096.0f;
-}
-void setThrottle() {
-  ESC.write((int)(throttle*180.0f));
 }
 
 void countRpms () {
@@ -164,7 +161,7 @@ void loop() {
     isTestRunning = true;
     while(!Serial.available()) {
       throttle=readPot();
-      setThrottle();
+      ESC.writeMicroseconds((int)((throttle*1000) + 1000));
       Serial.print(thrust);
       Serial.print(",");
       Serial.print(voltageValue);
@@ -195,7 +192,7 @@ void loop() {
     Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
     startTime=micros();
     isTestRunning = true;
-    while(!Serial.available() && (micros()-startTime)<18000000) {  
+    while(!Serial.available() && (micros()-startTime)<22000000) {  
       if((micros()-startTime)<2000000)
         throttle=0.25;
       else if((micros()-startTime)<4000000)
@@ -210,9 +207,14 @@ void loop() {
         throttle=0.0;
       else if((micros()-startTime)<18000000)
         throttle=(float)(micros()-startTime-12000000)/6000000.0;
-      else
+      else if((micros()-startTime)<20000000)
+        throttle=1;
+      else if((micros()-startTime)<=22000000)
+        throttle=0.25;
+      else 
         throttle=0.0;
-      setThrottle();
+      int escMicros = (throttle*1000) + 1000;
+      ESC.writeMicroseconds(escMicros);
       Serial.print(thrust);
       Serial.print(",");
       Serial.print(voltageValue);
@@ -223,7 +225,7 @@ void loop() {
       Serial.print(",");
       Serial.print(rpmCount2);
       Serial.print(","); 
-      Serial.print(throttle);
+      Serial.print(escMicros);
       /*Serial.print(",");
       int diffMicros = micros() - currentMicros;
       currentMicros = micros();
@@ -242,7 +244,7 @@ void loop() {
   // 115200 = 2.5ms cycle
   // 230400 = 1.1ms cycle
   // 460800 = 600us cycle
-  delay(3);        
+  delayMicroseconds(1300);        
 }
 
 void initTimer0 (unsigned Hz) { 
