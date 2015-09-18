@@ -16,6 +16,7 @@ int currentPin=A1;
 int potentiometerPin=A2;
 int ESCPin=12;
 int currentMicros = 0;
+int lastRead = 1;
 boolean isTestRunning = false;
 
 // Scale Pins
@@ -93,7 +94,8 @@ void setup() {
   scale.set_scale(-430);  //Eventually set this via EEPROM
   scale.tare();	//Reset the scale to 0
   
-  initTimer0(120);     //Start Timer loop for load cell and analog reads.
+  initTimer0(120);     //Start timer for load cell.
+  initTimer1(60);      //Start timer for analog reads.
 }
 
 float readPot() {
@@ -251,7 +253,7 @@ void initTimer0 (unsigned Hz) {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
   //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz); // Originally divided by 2, but seems to be doubling the HZ rate
+  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
   TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER0A); 
   TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT); 
@@ -270,9 +272,9 @@ void Timer0IntHandler() {
 
 void initTimer1 (unsigned Hz) { 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1); 
-  //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
+  //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
   TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz); // Originally divided by 2, but seems to be doubling the HZ rate
+  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
   TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER1A); 
   TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
@@ -283,7 +285,19 @@ void initTimer1 (unsigned Hz) {
 void Timer1IntHandler() {
   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
-    voltageValue = analogRead(voltagePin);
-    currentValue = analogRead(currentPin);
+    switch(lastRead) {
+      case 1:
+        voltageValue = analogRead(voltagePin);
+        lastRead = 2;
+        break;
+        
+      case 2:
+        currentValue = analogRead(currentPin);
+        lastRead = 1;
+        break;
+        
+      default:
+        break;
+    }
   }
 }
