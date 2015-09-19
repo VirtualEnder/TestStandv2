@@ -15,6 +15,10 @@
 // Configuration options
 #define UARTBAUD = 240800;   // UART Baud rate
 #define OVERSAMPLING = 64;   // Analog oversampling
+#define MINTHROTTLE = 1000;  // Low end of ESC calibrated range
+#define MAXTHROTTLE = 2000;  // High end of ESC calibrated range
+#define MINCOMMAND = 980;    // Value sent to ESC when test isn't running.
+#define SENSORRATE = 500;    // Refresh rate in HZ of load cell and analog read timer.
 
 //IO pins
 int potentiometerPin=A2;
@@ -86,8 +90,8 @@ void setup() {
   Serial.begin(UARTBAUD);
   
   //attach ESC servo output
-  ESC.attach(ESCPin,1000,2000);
-  ESC.writeMicroseconds(980);  // Ensure throttle is at 0
+  ESC.attach(ESCPin,MINTHROTTLE,MAXTHROTTLE);
+  ESC.writeMicroseconds(MINCOMMAND);  // Ensure throttle is at 0
   
   //attach Interupt for RPM sensor
   pinMode(PUSH1, INPUT_PULLUP);
@@ -100,7 +104,7 @@ void setup() {
   scale.set_scale(-430);  //Eventually set this via EEPROM
   scale.tare();	//Reset the scale to 0
   
-  initTimer0(500);     //Start timer for load cell and analog reads
+  initTimer0(SENSORRATE);     //Start timer for load cell and analog reads
 }
 
 float readPot() {
@@ -120,7 +124,7 @@ void loop() {
   
   isTestRunning = false;  //Stop reads from load cell
   
-  ESC.writeMicroseconds(980);  //Double check throttle is at 0
+  ESC.writeMicroseconds(MINCOMMAND);  //Double check throttle is at 0
   
   // Prompt for input and read it
   Serial.println("Type Tare, Calibrate, Start, or Free");
