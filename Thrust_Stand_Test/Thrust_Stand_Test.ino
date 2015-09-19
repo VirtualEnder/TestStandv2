@@ -12,14 +12,14 @@
 #include <EEPROM.h>
 #include <Servo.h> 
 
+// Configuration options
+#define UARTBAUD = 240800;   // UART Baud rate
+#define OVERSAMPLING = 64;   // Analog oversampling
+
 //IO pins
-int voltagePin=A0;
-int currentPin=A1;
 int potentiometerPin=A2;
 int ESCPin=36;
 int currentMicros = 0;
-int lastRead = 1;
-boolean isTestRunning = false;
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -36,6 +36,7 @@ volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
 
+// Misc Variables
 Servo ESC;
 char character;
 String input;
@@ -44,6 +45,8 @@ float calibration;
 int calibrationmass;
 float throttle;
 unsigned long startTime;
+int lastRead = 1;
+boolean isTestRunning = false;
 
 union f_bytes
 {
@@ -80,7 +83,7 @@ void saveFloatToEEPROM(float toSave,int address)
 void setup() {
   
   // initialize serial communication:
-  Serial.begin(230400);
+  Serial.begin(UARTBAUD);
   
   //attach ESC servo output
   ESC.attach(ESCPin,1000,2000);
@@ -246,15 +249,28 @@ void loop() {
   // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
   // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
   // the serial delay to get more stable cycle times.
-  // 115200 = 2.5ms cycle
-  // 230400 = 1.1ms cycle
+  // 115200 = 2.4ms cycle
+  // 230400 = 1.2ms cycle
   // 460800 = 600us cycle
-  delayMicroseconds(1300);        
+  switch(UARTBAUD) {
+    case 115200:
+      delayMicroseconds(2500);
+      break;
+      
+    case 230400:
+      delayMicroseconds(1300);
+      break;
+      
+    case 460800:
+      delayMicroseconds(700);
+      break;
+      
+  }        
 }
 
 void initTimer0 (unsigned Hz) { 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-  ADCHardwareOversampleConfigure(ADC0_BASE, 64);
+  ADCHardwareOversampleConfigure(ADC0_BASE, OVERSAMPLING);
   ADCSequenceDisable(ADC0_BASE, 0);
   
   ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
@@ -282,19 +298,19 @@ void initTimer0 (unsigned Hz) {
 
 void Timer0IntHandler() {
   TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-    if(isTestRunning) {
-      if(ADCIntStatus(ADC0_BASE, 0, false)){
-        ADCIntClear(ADC0_BASE, 0);
-        ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
-        voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
-        currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
-      } else {
-        ADCIntClear(ADC0_BASE, 0);
-        ADCProcessorTrigger(ADC0_BASE, 0);
-      }
-      if(scale.is_ready()){
-        thrust = scale.get_units();
-      }
+  if(isTestRunning) {
+    if(ADCIntStatus(ADC0_BASE, 0, false)){
+      ADCIntClear(ADC0_BASE, 0);
+      ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
+      voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
+      currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
+    } else {
+      ADCIntClear(ADC0_BASE, 0);
+      ADCProcessorTrigger(ADC0_BASE, 0);
+    }
+    if(scale.is_ready()){
+      thrust = scale.get_units();
+    }
   } 
 
 }
