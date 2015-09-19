@@ -32,7 +32,6 @@ volatile int rpmCount2 = 0;
 
 // analog value variables
 unsigned long ulADC0Value[8];
-volatile int ulADC0Avg;
 volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
@@ -98,8 +97,7 @@ void setup() {
   scale.set_scale(-430);  //Eventually set this via EEPROM
   scale.tare();	//Reset the scale to 0
   
-  initTimer0(120);     //Start timer for load cell.
-  initTimer1(240);      //Start timer for analog reads.
+  initTimer0(500);     //Start timer for load cell and analog reads
 }
 
 float readPot() {
@@ -255,29 +253,6 @@ void loop() {
 }
 
 void initTimer0 (unsigned Hz) { 
-  
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
-  //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
-  TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
-  TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
-  IntEnable(INT_TIMER0A); 
-  TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT); 
-  TimerIntRegister(TIMER0_BASE, TIMER_A, Timer0IntHandler); 
-  TimerEnable(TIMER0_BASE, TIMER_A); 
-}
-
-void Timer0IntHandler() {
-  TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-  if(isTestRunning) {
-    if(scale.is_ready()){
-      thrust = scale.get_units();
-    }
-  } 
-
-}
-
-void initTimer1 (unsigned Hz) { 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
   ADCHardwareOversampleConfigure(ADC0_BASE, 64);
   ADCSequenceDisable(ADC0_BASE, 0);
@@ -293,31 +268,33 @@ void initTimer1 (unsigned Hz) {
   ADCSequenceStepConfigure(ADC0_BASE, 0, 7, ADC_CTL_CH1 | ADC_CTL_IE | ADC_CTL_END);
   ADCSequenceEnable(ADC0_BASE, 0);
   ADCIntClear(ADC0_BASE, 0);
- 
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
-  //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
-  TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
+  
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
+  //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
+  TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
   unsigned long ulPeriod = (SysCtlClockGet () / Hz);
-  TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
-  IntEnable(INT_TIMER1A); 
-  TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
-  TimerIntRegister(TIMER1_BASE, TIMER_A, Timer1IntHandler); 
-  TimerEnable(TIMER1_BASE, TIMER_A); 
+  TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
+  IntEnable(INT_TIMER0A); 
+  TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT); 
+  TimerIntRegister(TIMER0_BASE, TIMER_A, Timer0IntHandler); 
+  TimerEnable(TIMER0_BASE, TIMER_A); 
 }
 
-void Timer1IntHandler() {
-   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-   
-  //if(isTestRunning) {
-   if(ADCIntStatus(ADC0_BASE, 0, false)){
-   ADCIntClear(ADC0_BASE, 0);
-   ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
-   voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
-   currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
-   } else {
-     ADCIntClear(ADC0_BASE, 0);
-     ADCProcessorTrigger(ADC0_BASE, 0);
-   }
-  //}
-  
+void Timer0IntHandler() {
+  TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    if(isTestRunning) {
+      if(ADCIntStatus(ADC0_BASE, 0, false)){
+        ADCIntClear(ADC0_BASE, 0);
+        ADCSequenceDataGet(ADC0_BASE, 0, ulADC0Value);
+        voltageValue = (ulADC0Value[0] + ulADC0Value[1] + ulADC0Value[2] + ulADC0Value[3] + 2)/4;
+        currentValue = (ulADC0Value[4] + ulADC0Value[5] + ulADC0Value[6] + ulADC0Value[7] + 2)/4;
+      } else {
+        ADCIntClear(ADC0_BASE, 0);
+        ADCProcessorTrigger(ADC0_BASE, 0);
+      }
+      if(scale.is_ready()){
+        thrust = scale.get_units();
+      }
+  } 
+
 }
