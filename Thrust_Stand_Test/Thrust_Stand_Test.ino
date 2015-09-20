@@ -23,7 +23,6 @@
 //IO pins
 int potentiometerPin=A2;
 int ESCPin=36;
-int currentMicros = 0;
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -51,6 +50,7 @@ float throttle;
 unsigned long startTime;
 int lastRead = 1;
 boolean isTestRunning = false;
+int currentMicros = 0;
 
 union f_bytes
 {
