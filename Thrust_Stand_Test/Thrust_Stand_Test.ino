@@ -13,12 +13,12 @@
 #include <Servo.h> 
 
 // Configuration options
-#define UARTBAUD = 240800;   // UART Baud rate
-#define OVERSAMPLING = 64;   // Analog oversampling
-#define MINTHROTTLE = 1000;  // Low end of ESC calibrated range
-#define MAXTHROTTLE = 2000;  // High end of ESC calibrated range
-#define MINCOMMAND = 980;    // Value sent to ESC when test isn't running.
-#define SENSORRATE = 500;    // Refresh rate in HZ of load cell and analog read timer.
+#define UARTBAUD 240800   // UART Baud rate
+#define OVERSAMPLING 16   // Analog oversampling
+#define MINTHROTTLE 1000  // Low end of ESC calibrated range
+#define MAXTHROTTLE 2000  // High end of ESC calibrated range
+#define MINCOMMAND 980    // Value sent to ESC when test isn't running.
+#define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
 //IO pins
 int potentiometerPin=A2;
@@ -48,6 +48,7 @@ float calibration;
 int calibrationmass;
 float throttle;
 unsigned long startTime;
+unsigned long loopStart;
 int lastRead = 1;
 boolean isTestRunning = false;
 int currentMicros = 0;
@@ -201,10 +202,11 @@ void loop() {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(ms)");
+    Serial.println("Thrust(g),Voltage,Current,eRPMs,mRPMs,Throttle(uS),Time(uS)");
     startTime=micros();
     isTestRunning = true;
     while(!Serial.available() && (micros()-startTime)<22000000) {  
+      loopStart = micros() - startTime;
       if((micros()-startTime)<2000000)
         throttle=0.25;
       else if((micros()-startTime)<4000000)
@@ -244,32 +246,33 @@ void loop() {
       Serial.print(diffMicros);*/
       Serial.print(",");
       Serial.println(micros()-startTime);
+   
+      // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
+      // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
+      // the serial delay to get more stable cycle times.
+      // 115200 = ~2.4ms cycle
+      // 230400 = ~1.2ms cycle
+      // 460800 = ~600us cycle
+      switch(UARTBAUD) {
+        case 115200:
+          delayMicroseconds(2500 - (micros() - loopStart));
+          break;
+          
+        case 230400:
+          delayMicroseconds(1300 - (micros() - loopStart));
+          break;
+          
+        case 460800:
+          delayMicroseconds(700 - (micros() - loopStart));
+          break;
+          
+      }  
     }
     while(Serial.available()) {
         character = Serial.read();
-        delay(1);
+        delayMicroseconds(50);
     }
-  }
-  // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
-  // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
-  // the serial delay to get more stable cycle times.
-  // 115200 = 2.4ms cycle
-  // 230400 = 1.2ms cycle
-  // 460800 = 600us cycle
-  switch(UARTBAUD) {
-    case 115200:
-      delayMicroseconds(2500);
-      break;
-      
-    case 230400:
-      delayMicroseconds(1300);
-      break;
-      
-    case 460800:
-      delayMicroseconds(700);
-      break;
-      
-  }        
+  }      
 }
 
 void initTimer0 (unsigned Hz) { 
@@ -317,4 +320,22 @@ void Timer0IntHandler() {
     }
   } 
 
+}
+
+
+void initTimer1 (unsigned Hz) { 
+ 
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
+  //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
+  TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
+  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
+  TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
+  IntEnable(INT_TIMER1A); 
+  TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
+  TimerIntRegister(TIMER1_BASE, TIMER_A, Timer1IntHandler); 
+  TimerEnable(TIMER1_BASE, TIMER_A); 
+}
+
+void Timer1IntHandler() {
+   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 }
