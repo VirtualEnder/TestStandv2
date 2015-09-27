@@ -13,7 +13,7 @@
 #include <Servo.h> 
 
 // Configuration options
-#define UARTBAUD 240800   // UART Baud rate
+#define UARTBAUD 460800   // UART Baud rate
 #define OVERSAMPLING 16   // Analog oversampling
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
@@ -21,7 +21,6 @@
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
 //IO pins
-int potentiometerPin=A2;
 int ESCPin=36;
 
 // Scale Pins
@@ -108,10 +107,6 @@ void setup() {
   initTimer0(SENSORRATE);     //Start timer for load cell and analog reads
 }
 
-float readPot() {
-  return (float)analogRead(potentiometerPin)/4096.0f;
-}
-
 void countRpms () {
   rpmCount++;
 }
@@ -165,39 +160,7 @@ void loop() {
       Serial.println(scale.get_units());
     }
   }
-  if(input.indexOf("Free") >= 0) {
-    input="";
-    Serial.println("Begining free run, press any key to exit");
-    delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,eRotations,oRotations,Throttle(%),Time(us)");
-    startTime=micros();
-    isTestRunning = true;
-    while(!Serial.available()) {
-      throttle=readPot();
-      ESC.writeMicroseconds((int)((throttle*1000) + 1000));
-      Serial.print(thrust);
-      Serial.print(",");
-      Serial.print(voltageValue);
-      Serial.print(",");
-      Serial.print(currentValue);
-      Serial.print(",");
-      Serial.print(rpmCount);
-      Serial.print(",");
-      Serial.print(rpmCount2);
-      Serial.print(","); 
-      Serial.print(throttle);
-      /*Serial.print(",");
-      int diffMicros = micros() - currentMicros;
-      currentMicros = micros();
-      Serial.print(diffMicros);*/
-      Serial.print(",");
-      Serial.println(micros()-startTime);
-    }
-    while(Serial.available()) {
-        character = Serial.read();
-        delay(1);
-    }
-  }
+  
   if(input.indexOf("Start") >= 0) {
     input="";
     Serial.println("Begining automated test, press any key to exit");
@@ -206,7 +169,7 @@ void loop() {
     startTime=micros();
     isTestRunning = true;
     while(!Serial.available() && (micros()-startTime)<22000000) {  
-      loopStart = micros() - startTime;
+      loopStart = micros();
       if((micros()-startTime)<2000000)
         throttle=0.25;
       else if((micros()-startTime)<4000000)
@@ -224,7 +187,7 @@ void loop() {
       else if((micros()-startTime)<20000000)
         throttle=1;
       else if((micros()-startTime)<=22000000)
-        throttle=0.25;
+        throttle=0.1;
       else 
         throttle=0.0;
       int escMicros = (throttle*1000) + 1000;
@@ -240,10 +203,10 @@ void loop() {
       Serial.print(rpmCount2);
       Serial.print(","); 
       Serial.print(escMicros);
-      /*Serial.print(",");
+      Serial.print(",");
       int diffMicros = micros() - currentMicros;
       currentMicros = micros();
-      Serial.print(diffMicros);*/
+      Serial.print(diffMicros);
       Serial.print(",");
       Serial.println(micros()-startTime);
    
@@ -253,26 +216,32 @@ void loop() {
       // 115200 = ~2.4ms cycle
       // 230400 = ~1.2ms cycle
       // 460800 = ~600us cycle
+      
+      unsigned int loopTime = micros() - loopStart;
+      int thisDelay;
       switch(UARTBAUD) {
         case 115200:
-          delayMicroseconds(2500 - (micros() - loopStart));
+          thisDelay = (2498 - loopTime);
           break;
           
         case 230400:
-          delayMicroseconds(1300 - (micros() - loopStart));
+          thisDelay = (1998 - loopTime);
           break;
           
         case 460800:
-          delayMicroseconds(700 - (micros() - loopStart));
+          thisDelay = (1098 - loopTime);
           break;
           
       }  
+      if (thisDelay < 0) { thisDelay = 0; }
+      delayMicroseconds(thisDelay);
     }
     while(Serial.available()) {
         character = Serial.read();
-        delayMicroseconds(50);
+        delay(1);
     }
-  }      
+  } 
+  delay(1);
 }
 
 void initTimer0 (unsigned Hz) { 
@@ -321,7 +290,6 @@ void Timer0IntHandler() {
   } 
 
 }
-
 
 void initTimer1 (unsigned Hz) { 
  
