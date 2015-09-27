@@ -14,7 +14,7 @@
 
 // Configuration options
 #define UARTBAUD 460800   // UART Baud rate
-#define OVERSAMPLING 16   // Analog oversampling
+#define OVERSAMPLING 32   // Analog oversampling
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
 #define MINCOMMAND 980    // Value sent to ESC when test isn't running.
