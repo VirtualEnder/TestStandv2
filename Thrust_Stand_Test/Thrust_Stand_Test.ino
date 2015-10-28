@@ -21,6 +21,7 @@
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
 #define LSCALE -490       // Scale factor for load cell amplifier.
+#define POLES 14          // Number of poles in the test motor.
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
 //IO pins
@@ -115,7 +116,7 @@ void setup() {
 void countRpms () {
   if(isTestRunning) {
     stepCount1++;
-    RPMs1 = micros() - stepTime1;
+    RPMs1 = ((1/(micros() - stepTime1))/(POLES/2))*60;
     stepTime1 = micros();
   }
 }
@@ -123,7 +124,7 @@ void countRpms () {
 void countRpms2 () {
   if(isTestRunning) {
     stepCount2++;
-    RPMs2 = micros() - stepTime2;
+    RPMs2 = ((1/(micros() - stepTime2))/(POLES/2))*60;
     stepTime2 = micros();
   }
 }
