@@ -13,11 +13,14 @@
 #include <Servo.h> 
 
 // Configuration options
-#define UARTBAUD 460800   // UART Baud rate
+#define UARTBAUD 460800   // UART Baud rate (DO NOT set to less than 115200) 
 #define OVERSAMPLING 64   // Analog oversampling
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
 #define MINCOMMAND 980    // Value sent to ESC when test isn't running.
+#define VSCALE 26         // Scale factor for Voltage divider.
+#define CSCALE 100        // Scale factor for current sensor.
+#define LSCALE -490       // Scale factor for load cell amplifier.
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
 //IO pins
@@ -28,9 +31,13 @@ int ESCPin=36;
 // HX711.PD_SCK	- pin #8
 HX711 scale(9, 8);	
 
-// RPM pins
-volatile int rpmCount = 0;
-volatile int rpmCount2 = 0;
+// RPM input variables
+unsigned int stepCount1 = 0;
+unsigned int stepCount2 = 0;
+unsigned int stepTime1 = 0;
+unsigned int stepTime2 = 0;
+unsigned int RPMs1 = 0;
+unsigned int RPMs2 = 0;
 
 // analog value variables
 unsigned long ulADC0Value[8];
@@ -45,12 +52,10 @@ String input;
 String calibrationWeight;
 float calibration;
 int calibrationmass;
-float throttle;
 unsigned long startTime;
 unsigned long loopStart;
-int lastRead = 1;
 boolean isTestRunning = false;
-int currentMicros = 0;
+unsigned int currentMicros = 0;
 
 union f_bytes
 {
@@ -64,7 +69,7 @@ float readFloatFromEEPROM(int address)
   {
     u.b[i]=EEPROM.read(address+i);
   }
-  //if the read float is nan, clear the eeprom
+  // if the read float is nan, clear the eeprom
   if(u.fval!=u.fval)
   {
     EEPROM.write(address,0);
@@ -89,38 +94,48 @@ void setup() {
   // initialize serial communication:
   Serial.begin(UARTBAUD);
   
-  //attach ESC servo output
+  // attach ESC servo output
   ESC.attach(ESCPin,MINTHROTTLE,MAXTHROTTLE);
   ESC.writeMicroseconds(MINCOMMAND);  // Ensure throttle is at 0
   
-  //attach Interupt for RPM sensor
+  // attach Interupt for RPM sensor
   pinMode(PUSH1, INPUT_PULLUP);
   attachInterrupt(PUSH1, countRpms, FALLING);
   pinMode(PUSH2, INPUT_PULLUP);
   attachInterrupt(PUSH2, countRpms2, FALLING);
   
-  calibration=readFloatFromEEPROM(4);  
+  //calibration=readFloatFromEEPROM(4);  
   
-  scale.set_scale(-430);  //Eventually set this via EEPROM
-  scale.tare();	//Reset the scale to 0
+  scale.set_scale(LSCALE);  // Eventually set this via EEPROM
+  scale.tare();	// Reset the scale to 0
   
-  initTimer0(SENSORRATE);     //Start timer for load cell and analog reads
+  initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
 }
 
 void countRpms () {
-  rpmCount++;
+  if(isTestRunning) {
+    stepCount1++;
+    RPMs1 = micros() - stepTime1;
+    stepTime1 = micros();
+  }
 }
 
 void countRpms2 () {
-  rpmCount2++;
+  if(isTestRunning) {
+    stepCount2++;
+    RPMs2 = micros() - stepTime2;
+    stepTime2 = micros();
+  }
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
   
-  isTestRunning = false;  //Stop reads from load cell
-  
+  isTestRunning = false;  //Stop reads from load cell and reset step counters
+  stepCount1 = 0;
+  stepCount2 = 0;
   ESC.writeMicroseconds(MINCOMMAND);  //Double check throttle is at 0
+  scale.tare(); // Tare scale
   
   // Prompt for input and read it
   Serial.println("Type Tare, Calibrate, Start, or Free");
@@ -165,59 +180,74 @@ void loop() {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,eRPMs,mRPMs,Throttle(uS),Time(uS)");
+    Serial.println("Thrust(g),Voltage,Current,mSteps,oSteps,Throttle(uS),Time(uS),mPRMs,oRPMs,Volts,Amps, Loop(uS)");
     startTime=micros();
     isTestRunning = true;
-    while(!Serial.available() && (micros()-startTime)<22000000) {  
+    int escMicros = MINCOMMAND;
+    
+    while(!Serial.available() && isTestRunning) {  
       loopStart = micros();
       if((micros()-startTime)<2000000)
-        throttle=0.25;
+        escMicros = 1250;
       else if((micros()-startTime)<4000000)
-        throttle=0.1;
+        escMicros = 1100;
       else if((micros()-startTime)<6000000)
-        throttle=0.50;
+        escMicros = 1500;
       else if((micros()-startTime)<8000000)
-        throttle=0.1;
+        escMicros = 1100;
       else if((micros()-startTime)<10000000)
-        throttle=1.0;
+        escMicros = 2000;
       else if((micros()-startTime)<12000000)
-        throttle=0.0;
+        escMicros = MINCOMMAND;
       else if((micros()-startTime)<18000000)
-        throttle=(float)(micros()-startTime-12000000)/6000000.0;
+        escMicros = (float)(micros()-startTime-12000000)/6000000.0;
       else if((micros()-startTime)<20000000)
-        throttle=1;
+        escMicros = 2000;
       else if((micros()-startTime)<=22000000)
-        throttle=0.1;
-      else 
-        throttle=0.0;
-      int escMicros = (throttle*1000) + 1000;
-      ESC.writeMicroseconds(escMicros);
+        escMicros = 1100;
+      else {
+        escMicros = MINCOMMAND;
+        isTestRunning = false;
+      }
+      if(currentMicros != escMicros) {
+        ESC.writeMicroseconds(escMicros);
+        currentMicros = escMicros;
+      }
+      
+      
       Serial.print(thrust);
       Serial.print(",");
       Serial.print(voltageValue);
       Serial.print(",");
       Serial.print(currentValue);
       Serial.print(",");
-      Serial.print(rpmCount);
+      Serial.print(stepCount1);
       Serial.print(",");
-      Serial.print(rpmCount2);
+      Serial.print(stepCount2);
       Serial.print(","); 
       Serial.print(escMicros);
       Serial.print(",");
-      int diffMicros = micros() - currentMicros;
-      currentMicros = micros();
-      Serial.print(diffMicros);
+      Serial.print(micros()-startTime);
       Serial.print(",");
-      Serial.println(micros()-startTime);
+      Serial.print(RPMs1);
+      Serial.print(",");
+      Serial.print(RPMs2);
+      Serial.print(",");
+      Serial.print((voltageValue/4096) * VSCALE);
+      Serial.print(",");
+      Serial.print((currentValue/4096) * CSCALE);
+      Serial.print(",");
+      unsigned int loopTime = micros() - loopStart + 100;
+      Serial.println(loopTime);
    
       // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
       // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
       // the serial delay to get more stable cycle times.
-      // 115200 = ~2.4ms cycle
-      // 230400 = ~1.2ms cycle
-      // 460800 = ~600us cycle
+      // 115200 = ~2.5ms cycle
+      // 230400 = ~2.1ms cycle
+      // 460800 = ~1.2us cycle
+      // minimum looptime is set to 1ms for all higher baud rates.
       
-      unsigned int loopTime = micros() - loopStart;
       int thisDelay;
       switch(UARTBAUD) {
         case 115200:
@@ -232,6 +262,9 @@ void loop() {
           thisDelay = (1098 - loopTime);
           break;
           
+        default:
+          thisDelay = (998 - loopTime);
+          break;
       }  
       if (thisDelay < 0) { thisDelay = 0; }
       delayMicroseconds(thisDelay);
