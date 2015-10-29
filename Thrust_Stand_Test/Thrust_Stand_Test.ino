@@ -20,7 +20,7 @@
 #define MINCOMMAND 980    // Value sent to ESC when test isn't running.
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
-#define LSCALE -490       // Scale factor for load cell amplifier.
+#define LSCALE -510       // Scale factor for load cell amplifier.
 #define POLES 14          // Number of poles in the test motor.
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
@@ -57,6 +57,7 @@ unsigned long startTime;
 unsigned long loopStart;
 boolean isTestRunning = false;
 unsigned int currentMicros = 0;
+boolean isTared = false;
 
 union f_bytes
 {
@@ -141,7 +142,11 @@ void loop() {
   stepCount1 = 0;
   stepCount2 = 0;
   ESC.writeMicroseconds(MINCOMMAND);  //Double check throttle is at 0
-  scale.tare(); // Tare scale
+  
+  if(!isTared) {
+    scale.tare();
+    isTared = false;
+  }
   
   // Prompt for input and read it
   Serial.println("Type Tare, Calibrate, Start, or Free");
@@ -183,6 +188,7 @@ void loop() {
   }
   if(input.indexOf("Idle") >= 0) {
     Serial.println("Idling, press any key to exit");
+    delay(2);
     startTime=micros();
     ESC.writeMicroseconds(1100);
     while(!Serial.available()&& micros()-startTime < 4000000) {
@@ -202,7 +208,7 @@ void loop() {
     isTestRunning = true;
     int escMicros = MINCOMMAND;
     
-    while(!Serial.available() && isTestRunning) { 
+    while(!Serial.available() && isTestRunning) {
       loopStart = micros(); 
       int currentLoopTime = micros()-startTime;
       if(currentLoopTime<2000000)
@@ -215,17 +221,23 @@ void loop() {
         escMicros = 1100;
       else if(currentLoopTime<10000000)
         escMicros = 2000;
-      else if(currentLoopTime<12000000)
+      else if(currentLoopTime<11000000)
         escMicros = MINCOMMAND;
+      else if(currentLoopTime<12000000 && !isTared) {
+        scale.tare();
+        isTared = true;
+      } 
       else if(currentLoopTime<18000000)
         escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;
       else if(currentLoopTime<20000000)
         escMicros = 2000;
       else if(currentLoopTime<=22000000)
         escMicros = 1100;
-      else {
+      else if(currentLoopTime<=24000000)
         escMicros = MINCOMMAND;
+      else {
         isTestRunning = false;
+        isTared = false;
       }
       if(escMicros != currentMicros) {
         ESC.writeMicroseconds(escMicros);
@@ -332,7 +344,7 @@ void Timer0IntHandler() {
     if(scale.is_ready()){
       thrust = scale.get_units();
     }
-  } 
+  }
 
 }
 
