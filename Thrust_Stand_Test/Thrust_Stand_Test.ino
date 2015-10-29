@@ -92,7 +92,7 @@ void saveFloatToEEPROM(float toSave,int address)
   }
   
 }
-// the setup routine runs once when you press reset:
+:
 void setup() {
   
   // initialize serial communication:
@@ -123,7 +123,8 @@ void setup() {
 
 void countRpms () {
   if(isTestRunning) {
-    stepCount1++;
+    stepCount1++;    // Increase Step counter
+    // Calculate RPMs from step time.
     RPMs1 = ((((float)1/(float)(micros() - stepTime1))*1000000)/(POLES/2))*60;
     stepTime1 = micros();
   }
@@ -131,19 +132,19 @@ void countRpms () {
 
 void countRpms2 () {
   if(isTestRunning) {
-    stepCount2++;
+    stepCount2++;    // Increase Step counter
+    // Calculate RPMs from step time.
     RPMs2 = ((((float)1/(float)(micros() - stepTime2))*1000000)/(POLES/2))*60;
     stepTime2 = micros();
   }
 }
 
-// the loop routine runs over and over again forever:
 void loop() {
   
-  isTestRunning = false;  //Stop reads from load cell and reset step counters
+  isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;
-  ESC.writeMicroseconds(MINCOMMAND);  //Double check throttle is at 0
+  ESC.writeMicroseconds(MINCOMMAND);  // Double check throttle is at 0
   
   if(!isTared) {
     scale.tare();
@@ -163,6 +164,7 @@ void loop() {
   Serial.println(input);
   
   //Check input
+  
   if(input.indexOf("t") >= 0) {
     input="";
     Serial.println("Taring");
@@ -170,6 +172,8 @@ void loop() {
   }
   if(input.indexOf("c") >= 0) {
     input="";
+    
+    // Start ESC Calibration Routine
     Serial.println("Please make SURE the ESC is unplugged from power, then hit any key. Otherwise press 'e' to exit");
     while(!Serial.available());
     while(Serial.available()) {
@@ -178,10 +182,10 @@ void loop() {
         delay(1);
     }
     if(input.indexOf("e") < 0) {
-      ESC.writeMicroseconds(MAXTHROTTLE - 15);
+      ESC.writeMicroseconds(MAXTHROTTLE - 15);  // Calibrate to Max throttle -15 usecs to ensure full throttle is reached.
       Serial.println("Plug in the ESC to battery power and wait for the calibration beeps, then press any key to continue.");
       while(!Serial.available());
-      ESC.writeMicroseconds(MINTHROTTLE);
+      ESC.writeMicroseconds(MINTHROTTLE);      // Set bottom of range
       Serial.println("Once calibration has finished unplug the battery and hit any key to continue");
       while(!Serial.available());
       Serial.println("ESC Calibration Complete, thank you!");
@@ -191,6 +195,8 @@ void loop() {
   if(input.indexOf("i") >= 0) {
     Serial.println("Idling, press any key to exit");
     delay(2000);
+    
+    // Idle for 4 seconds
     startTime=micros();
     ESC.writeMicroseconds(1100);
     while(!Serial.available()&& micros()-startTime < 4000000) {
@@ -203,6 +209,8 @@ void loop() {
   
   if(input.indexOf("s") >= 0) {
     input="";
+    
+    //Create CSV header output
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
     Serial.print("Thrust(g),");
@@ -226,6 +234,8 @@ void loop() {
     }
     Serial.print("Volts,");
     Serial.print("Amps");
+    
+    // Initiate test run
     startTime=micros();
     isTestRunning = true;
     int escMicros = MINCOMMAND;
@@ -246,11 +256,13 @@ void loop() {
       else if(currentLoopTime<11000000)
         escMicros = MINCOMMAND;
       else if(currentLoopTime<12000000 && !isTared) {
+        // Tare scale between passes to increase accuracy.
         scale.tare();
         isTared = true;
       } 
       else if(currentLoopTime<18000000)
-        escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;
+        // Iterate through whole throttle range based on time
+        escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;   
       else if(currentLoopTime<20000000)
         escMicros = 2000;
       else if(currentLoopTime<=22000000)
@@ -266,7 +278,16 @@ void loop() {
         currentMicros = escMicros;
       }
       
-      
+      // If no steps have happened in 500ms reset rpms to 0
+      // This means that the minimum RPMs the code is capable of detecting is
+      // 120 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+      // at about 2000 rpms.
+      if(micros()-stepTime1 > 500000) {
+        RPMs1 = 0;
+      }
+      if(micros()-stepTime1 > 500000) {
+        RPMs1 = 0;
+      }
       Serial.print(thrust);
       Serial.print(",");
       /*
@@ -295,9 +316,9 @@ void loop() {
         Serial.print(RPMs2);
         Serial.print(",");
       }
-      Serial.print(((float)voltageValue/4096) * (float)VSCALE); //
+      Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
       Serial.print(",");
-      Serial.println(((float)currentValue/4096) * (float)CSCALE); // 
+      Serial.println(((float)currentValue/4096) * (float)CSCALE); // Calculate Amps from analog sensor
    
       // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
       // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
