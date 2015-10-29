@@ -13,7 +13,7 @@
 #include <Servo.h> 
 
 // Configuration options
-#define UARTBAUD 460800   // UART Baud rate (DO NOT set to less than 115200) 
+#define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
 #define OVERSAMPLING 64   // Analog oversampling
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
@@ -33,12 +33,12 @@ int ESCPin=36;
 HX711 scale(9, 8);	
 
 // RPM input variables
-unsigned int stepCount1 = 0;
-unsigned int stepCount2 = 0;
-unsigned int stepTime1 = 0;
-unsigned int stepTime2 = 0;
-unsigned int RPMs1 = 0;
-unsigned int RPMs2 = 0;
+volatile unsigned int stepCount1 = 0;
+volatile unsigned int stepCount2 = 0;
+volatile unsigned int stepTime1 = 0;
+volatile unsigned int stepTime2 = 0;
+volatile unsigned int RPMs1 = 0;
+volatile unsigned int RPMs2 = 0;
 
 // analog value variables
 unsigned long ulADC0Value[8];
@@ -100,10 +100,15 @@ void setup() {
   ESC.writeMicroseconds(MINCOMMAND);  // Ensure throttle is at 0
   
   // attach Interupt for RPM sensor
+  pinMode(33, OUTPUT);
+  digitalWrite(33,LOW);
+  pinMode(32, OUTPUT);
+  digitalWrite(32,HIGH);
   pinMode(PUSH1, INPUT_PULLUP);
   attachInterrupt(PUSH1, countRpms, FALLING);
   pinMode(PUSH2, INPUT_PULLUP);
   attachInterrupt(PUSH2, countRpms2, FALLING);
+  
   
   //calibration=readFloatFromEEPROM(4);  
   
@@ -116,7 +121,7 @@ void setup() {
 void countRpms () {
   if(isTestRunning) {
     stepCount1++;
-    RPMs1 = ((1/(micros() - stepTime1))/(POLES/2))*60;
+    RPMs1 = ((((float)1/(float)(micros() - stepTime1))*1000000)/(POLES/2))*60;
     stepTime1 = micros();
   }
 }
@@ -124,7 +129,7 @@ void countRpms () {
 void countRpms2 () {
   if(isTestRunning) {
     stepCount2++;
-    RPMs2 = ((1/(micros() - stepTime2))/(POLES/2))*60;
+    RPMs2 = ((((float)1/(float)(micros() - stepTime2))*1000000)/(POLES/2))*60;
     stepTime2 = micros();
   }
 }
@@ -176,41 +181,53 @@ void loop() {
       Serial.println(scale.get_units());
     }
   }
+  if(input.indexOf("Idle") >= 0) {
+    Serial.println("Idling, press any key to exit");
+    startTime=micros();
+    ESC.writeMicroseconds(1100);
+    while(!Serial.available()&& micros()-startTime < 4000000) {
+    }
+    while(Serial.available()) {
+        character = Serial.read();
+        delay(1);
+    }
+  }
   
   if(input.indexOf("Start") >= 0) {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,mSteps,oSteps,Throttle(uS),Time(uS),mPRMs,oRPMs,Volts,Amps, Loop(uS)");
+    Serial.println("Thrust(g),Voltage,Current,mSteps,oSteps,Throttle(uS),Time(uS),mPRMs,oRPMs,Volts,Amps");
     startTime=micros();
     isTestRunning = true;
     int escMicros = MINCOMMAND;
     
-    while(!Serial.available() && isTestRunning) {  
-      loopStart = micros();
-      if((micros()-startTime)<2000000)
+    while(!Serial.available() && isTestRunning) { 
+      loopStart = micros(); 
+      int currentLoopTime = micros()-startTime;
+      if(currentLoopTime<2000000)
         escMicros = 1250;
-      else if((micros()-startTime)<4000000)
+      else if(currentLoopTime<4000000)
         escMicros = 1100;
-      else if((micros()-startTime)<6000000)
+      else if(currentLoopTime<6000000)
         escMicros = 1500;
-      else if((micros()-startTime)<8000000)
+      else if(currentLoopTime<8000000)
         escMicros = 1100;
-      else if((micros()-startTime)<10000000)
+      else if(currentLoopTime<10000000)
         escMicros = 2000;
-      else if((micros()-startTime)<12000000)
+      else if(currentLoopTime<12000000)
         escMicros = MINCOMMAND;
-      else if((micros()-startTime)<18000000)
-        escMicros = (float)(micros()-startTime-12000000)/6000000.0;
-      else if((micros()-startTime)<20000000)
+      else if(currentLoopTime<18000000)
+        escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;
+      else if(currentLoopTime<20000000)
         escMicros = 2000;
-      else if((micros()-startTime)<=22000000)
+      else if(currentLoopTime<=22000000)
         escMicros = 1100;
       else {
         escMicros = MINCOMMAND;
         isTestRunning = false;
       }
-      if(currentMicros != escMicros) {
+      if(escMicros != currentMicros) {
         ESC.writeMicroseconds(escMicros);
         currentMicros = escMicros;
       }
@@ -228,43 +245,37 @@ void loop() {
       Serial.print(","); 
       Serial.print(escMicros);
       Serial.print(",");
-      Serial.print(micros()-startTime);
+      Serial.print(currentLoopTime);
       Serial.print(",");
       Serial.print(RPMs1);
       Serial.print(",");
       Serial.print(RPMs2);
       Serial.print(",");
-      Serial.print((voltageValue/4096) * VSCALE);
+      Serial.print(((float)voltageValue/4096) * (float)VSCALE); //
       Serial.print(",");
-      Serial.print((currentValue/4096) * CSCALE);
-      Serial.print(",");
-      unsigned int loopTime = micros() - loopStart + 100;
-      Serial.println(loopTime);
+      Serial.println(((float)currentValue/4096) * (float)CSCALE); // 
    
       // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
       // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
       // the serial delay to get more stable cycle times.
-      // 115200 = ~2.5ms cycle
-      // 230400 = ~2.1ms cycle
-      // 460800 = ~1.2us cycle
+      // 115200 = ~2ms cycle
+      // 230400 = ~1.5ms cycle
+      // 460800 = ~1ms cycle
       // minimum looptime is set to 1ms for all higher baud rates.
-      
+
       int thisDelay;
+      unsigned int loopTime = micros() - loopStart;
       switch(UARTBAUD) {
         case 115200:
-          thisDelay = (2498 - loopTime);
+          thisDelay = (1897 - loopTime);
           break;
           
         case 230400:
-          thisDelay = (1998 - loopTime);
-          break;
-          
-        case 460800:
-          thisDelay = (1098 - loopTime);
+          thisDelay = (1497 - loopTime);
           break;
           
         default:
-          thisDelay = (998 - loopTime);
+          thisDelay = (997 - loopTime);
           break;
       }  
       if (thisDelay < 0) { thisDelay = 0; }
