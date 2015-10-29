@@ -20,7 +20,7 @@
 #define MINCOMMAND 980    // Value sent to ESC when test isn't running.
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
-#define LSCALE -510       // Scale factor for load cell amplifier.
+#define LSCALE -700       // Scale factor for load cell amplifier.
 #define POLES 14          // Number of poles in the test motor.
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 
@@ -149,7 +149,7 @@ void loop() {
   }
   
   // Prompt for input and read it
-  Serial.println("Type Tare, Calibrate, Start, or Free");
+  Serial.println("Type t(Tare), c(Calibrate), s(Start), or i(Idle)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -161,34 +161,34 @@ void loop() {
   Serial.println(input);
   
   //Check input
-  if(input.indexOf("Tare") >= 0) {
+  if(input.indexOf("t") >= 0) {
     input="";
     Serial.println("Taring");
     scale.tare();
   }
-  if(input.indexOf("Calibrate") >= 0) {
+  if(input.indexOf("c") >= 0) {
     input="";
-    Serial.println("You must Tare before calibrating.  To exit calibration without saving a new value, type Exit. Otherwise enter the calibration mass in grams, without units");
+    Serial.println("Please make SURE the ESC is unplugged from power, then hit any key. Otherwise press 'e' to exit");
     while(!Serial.available());
     while(Serial.available()) {
         character = Serial.read();
         input.concat(character);
         delay(1);
     }
-    if(input.indexOf("Exit") < 0) {
-      calibrationmass=input.toInt();
-      Serial.print("Calibration mass: ");
-      Serial.println(calibrationmass);
-      calibration=(float)calibrationmass/(scale.get_units());
-      scale.set_scale(calibration);
-      saveFloatToEEPROM(calibration,4);
-      Serial.print("New measured mass: ");
-      Serial.println(scale.get_units());
+    if(input.indexOf("e") < 0) {
+      ESC.writeMicroseconds(MAXTHROTTLE - 15);
+      Serial.println("Plug in the ESC to battery power and wait for the calibration beeps, then press any key to continue.");
+      while(!Serial.available());
+      ESC.writeMicroseconds(MINTHROTTLE);
+      Serial.println("Once calibration has finished unplug the battery and hit any key to continue");
+      while(!Serial.available());
+      Serial.println("ESC Calibration Complete, thank you!");
+      delay(3000);
     }
   }
-  if(input.indexOf("Idle") >= 0) {
+  if(input.indexOf("i") >= 0) {
     Serial.println("Idling, press any key to exit");
-    delay(2);
+    delay(2000);
     startTime=micros();
     ESC.writeMicroseconds(1100);
     while(!Serial.available()&& micros()-startTime < 4000000) {
@@ -199,7 +199,7 @@ void loop() {
     }
   }
   
-  if(input.indexOf("Start") >= 0) {
+  if(input.indexOf("s") >= 0) {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
@@ -272,7 +272,7 @@ void loop() {
       // the serial delay to get more stable cycle times.
       // 115200 = ~2ms cycle
       // 230400 = ~1.5ms cycle
-      // 460800 = ~1ms cycle
+      // All faster bauds = ~1ms cycle
       // minimum looptime is set to 1ms for all higher baud rates.
 
       int thisDelay;
