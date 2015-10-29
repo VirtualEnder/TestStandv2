@@ -14,18 +14,20 @@
 
 // Configuration options
 #define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
-#define OVERSAMPLING 64   // Analog oversampling
+#define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
+#define MAGSENS true      // Using Magnetic RPM sensor?
+#define OPTISENS false    // Using Magnetic RPM sensor?
+#define OVERSAMPLING 64   // Analog oversampling multiplier
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
 #define MINCOMMAND 980    // Value sent to ESC when test isn't running.
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
 #define LSCALE -700       // Scale factor for load cell amplifier.
-#define POLES 14          // Number of poles in the test motor.
-#define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
+#define POLES 14          // Number of magnetic poles in test motor.
 
 //IO pins
-int ESCPin=36;
+int ESCPin=36;            // ESC PWM output pin
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -203,7 +205,25 @@ void loop() {
     input="";
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
-    Serial.println("Thrust(g),Voltage,Current,mSteps,oSteps,Throttle(uS),Time(uS),mPRMs,oRPMs,Volts,Amps");
+    Serial.print("Thrust(g),");
+    Serial.print("Voltage,");
+    Serial.print("Current,");
+    if(MAGSENS) {
+      Serial.print("mSteps,");
+    }
+    if(OPTISENS) {
+      Serial.print("oSteps,");
+    }
+    Serial.print("Throttle(uS),");
+    Serial.print("Time(uS),");
+    if(MAGSENS) {
+      Serial.print("mPRMs,");
+    }
+    if(OPTISENS) {
+      Serial.print("oRPMs,");
+    }
+    Serial.print("Volts,");
+    Serial.print("Amps");
     startTime=micros();
     isTestRunning = true;
     int escMicros = MINCOMMAND;
@@ -247,22 +267,32 @@ void loop() {
       
       Serial.print(thrust);
       Serial.print(",");
+      /*
       Serial.print(voltageValue);
       Serial.print(",");
       Serial.print(currentValue);
       Serial.print(",");
-      Serial.print(stepCount1);
-      Serial.print(",");
-      Serial.print(stepCount2);
-      Serial.print(","); 
+      */
+      if(MAGSENS) {
+        Serial.print(stepCount1);
+        Serial.print(",");
+      }
+      if(OPTISENS) {
+        Serial.print(stepCount2);
+        Serial.print(","); 
+      }
       Serial.print(escMicros);
       Serial.print(",");
       Serial.print(currentLoopTime);
       Serial.print(",");
-      Serial.print(RPMs1);
-      Serial.print(",");
-      Serial.print(RPMs2);
-      Serial.print(",");
+      if(MAGSENS) {
+        Serial.print(RPMs1);
+        Serial.print(",");
+      }
+      if(OPTISENS) {
+        Serial.print(RPMs2);
+        Serial.print(",");
+      }
       Serial.print(((float)voltageValue/4096) * (float)VSCALE); //
       Serial.print(",");
       Serial.println(((float)currentValue/4096) * (float)CSCALE); // 
