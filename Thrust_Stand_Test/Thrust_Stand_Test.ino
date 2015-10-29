@@ -17,6 +17,7 @@
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 #define MAGSENS true      // Using Magnetic RPM sensor?
 #define OPTISENS false    // Using Magnetic RPM sensor?
+#define POLES 14          // Number of magnetic poles in test motor.
 #define OVERSAMPLING 64   // Analog oversampling multiplier
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
@@ -24,7 +25,6 @@
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
 #define LSCALE -700       // Scale factor for load cell amplifier.
-#define POLES 14          // Number of magnetic poles in test motor.
 
 //IO pins
 int ESCPin=36;            // ESC PWM output pin
@@ -206,8 +206,10 @@ void loop() {
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
     Serial.print("Thrust(g),");
+    /*
     Serial.print("Voltage,");
     Serial.print("Current,");
+    */
     if(MAGSENS) {
       Serial.print("mSteps,");
     }
