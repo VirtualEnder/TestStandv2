@@ -2,7 +2,7 @@
 
 Pin connections for this software:
 
-PWM Output(125us - 250us):   Pin 14 or PB_6
+PWM Output(125us-250us):     Pin 14 or PB_6
 PWM Output(1000-2000us):     Pin 36 or PC_5
 Current Sensor:              Pin 29 or PE_2 
 Voltage Sensor:              Pin 28 or PE_3
@@ -11,7 +11,10 @@ Load Cell Amp HX711.DOUT     Pin 9 or PA_6
 Electical/Magnetic RPMs      Pin 31 or PF_4 or PUSH1
 Optical RPMs                 Pin 17 or PF_0 or PUSH2
 
+Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
+Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
 */
+
 #include "Energia.h" 
 #include "inc/hw_memmap.h" 
 #include "inc/hw_types.h" 
@@ -21,7 +24,7 @@ Optical RPMs                 Pin 17 or PF_0 or PUSH2
 #include "driverlib/sysctl.h" 
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
-#include "driverlib/timer.h" //See more at: http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/#sthash.VheM8bk6.dpuf
+#include "driverlib/timer.h" 
 #include "HX711.h"           //Requires HX711 Library from: https://github.com/bogde/HX711
 #include <EEPROM.h>
 #include <Servo.h> 
@@ -121,14 +124,18 @@ void setup() {
   ESC.writeMicroseconds(MINCOMMAND);  // Ensure throttle is at 0
   
   // attach Interupt for RPM sensor
-  pinMode(33, OUTPUT);
-  digitalWrite(33,LOW);
-  pinMode(32, OUTPUT);
-  digitalWrite(32,HIGH);
-  pinMode(PUSH1, INPUT_PULLUP);
-  attachInterrupt(PUSH1, countRpms, FALLING);
-  pinMode(PUSH2, INPUT_PULLUP);
-  attachInterrupt(PUSH2, countRpms2, FALLING);
+  if(MAGSENS) {
+    pinMode(33, OUTPUT);
+    digitalWrite(33,LOW);
+    pinMode(32, OUTPUT);
+    digitalWrite(32,HIGH);
+    pinMode(PUSH1, INPUT_PULLUP);
+    attachInterrupt(PUSH1, countRpms, FALLING);
+  }
+  if(OPTISENS) {
+    pinMode(PUSH2, INPUT_PULLUP);
+    attachInterrupt(PUSH2, countRpms2, FALLING);
+  }
   
   
   //calibration=readFloatFromEEPROM(4);  
@@ -298,6 +305,8 @@ void loop() {
       }
       if(escMicros != currentMicros) {
         ESC.writeMicroseconds(escMicros);
+        unsigned long PWMOutDuty = (((float)(escMicros - 1000)/1000)*10000) + 10000;
+        TimerMatchSet(TIMER1_BASE, TIMER_A, PWMOutDuty);
         currentMicros = escMicros;
       }
       
@@ -394,8 +403,7 @@ void initTimer0 (unsigned Hz) {
   ADCSequenceEnable(ADC0_BASE, 0);
   ADCIntClear(ADC0_BASE, 0);
   
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); 
-  //TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER); 
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);  
   TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
   unsigned long ulPeriod = (SysCtlClockGet () / Hz);
   TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
