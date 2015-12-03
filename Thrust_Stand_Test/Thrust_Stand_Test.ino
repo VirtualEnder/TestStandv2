@@ -1,3 +1,17 @@
+/*
+
+Pin connections for this software:
+
+PWM Output(125us - 250us):   Pin 14 or PB_6
+PWM Output(1000-2000us):     Pin 36 or PC_5
+Current Sensor:              Pin 29 or PE_2 
+Voltage Sensor:              Pin 28 or PE_3
+Load Cell Amp HX711.DOUT     Pin 9 or PA_6
+              HX711.PD_SCK   Pin 8 or PA_5 
+Electical/Magnetic RPMs      Pin 31 or PF_4 or PUSH1
+Optical RPMs                 Pin 17 or PF_0 or PUSH2
+
+*/
 #include "Energia.h" 
 #include "inc/hw_memmap.h" 
 #include "inc/hw_types.h" 
@@ -48,6 +62,10 @@ volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
 
+// PWM Output variables
+unsigned long dutyCycle = 125;
+
+
 // Misc Variables
 Servo ESC;
 char character;
@@ -92,7 +110,7 @@ void saveFloatToEEPROM(float toSave,int address)
   }
   
 }
-:
+
 void setup() {
   
   // initialize serial communication:
@@ -119,23 +137,28 @@ void setup() {
   scale.tare();	// Reset the scale to 0
   
   initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
+  initPWMOut(4000);     // Start PWM output at 4khz (250us)
 }
 
 void countRpms () {
   if(isTestRunning) {
     stepCount1++;    // Increase Step counter
-    // Calculate RPMs from step time.
-    RPMs1 = ((((float)1/(float)(micros() - stepTime1))*1000000)/(POLES/2))*60;
+    unsigned long stepMicros1 = micros();
+    unsigned long lastStep1 = stepTime1;
     stepTime1 = micros();
+    // Calculate RPMs from step time.
+    RPMs1 = ((((float)1/(float)(stepMicros1 - lastStep1))*1000000)/(POLES/2))*60;
   }
 }
 
 void countRpms2 () {
   if(isTestRunning) {
     stepCount2++;    // Increase Step counter
-    // Calculate RPMs from step time.
-    RPMs2 = ((((float)1/(float)(micros() - stepTime2))*1000000)/(POLES/2))*60;
+    unsigned long stepMicros2 = micros();
+    unsigned long lastStep2 = stepTime2;
     stepTime2 = micros();
+    // Calculate RPMs from step time.
+    RPMs2 = ((((float)1/(float)(stepMicros2 - lastStep2))*1000000)/(POLES/2))*60;
   }
 }
 
@@ -359,7 +382,7 @@ void initTimer0 (unsigned Hz) {
   ADCHardwareOversampleConfigure(ADC0_BASE, OVERSAMPLING);
   ADCSequenceDisable(ADC0_BASE, 0);
   
-  ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+  ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 3);
   ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
   ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH0);
   ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH0);
@@ -401,19 +424,23 @@ void Timer0IntHandler() {
 
 }
 
-void initTimer1 (unsigned Hz) { 
- 
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
-  //TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER); 
-  TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
-  TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
-  IntEnable(INT_TIMER1A); 
-  TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
-  TimerIntRegister(TIMER1_BASE, TIMER_A, Timer1IntHandler); 
-  TimerEnable(TIMER1_BASE, TIMER_A); 
-}
+void initPWMOut (unsigned Hz) { 
+    
+    // Disable on board LEDs
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
 
-void Timer1IntHandler() {
-   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+    // Configure PB6 as T0CCP0
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    GPIOPinConfigure(GPIO_PB6_T0CCP0);
+    GPIOPinTypeTimer(GPIO_PORTB_BASE, GPIO_PIN_6);
+
+    // Configure timer
+    unsigned long ulPeriod = (SysCtlClockGet () / Hz);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
+    TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM);
+    TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1);
+    TimerMatchSet(TIMER1_BASE, TIMER_A, (ulPeriod / 2)); // PWM
+    TimerEnable(TIMER1_BASE, TIMER_A);
 }
