@@ -33,7 +33,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 #define MAGSENS true      // Using Magnetic RPM sensor?
-#define OPTISENS false    // Using Magnetic RPM sensor?
+#define OPTISENS false    // Using Optical RPM sensor?
 #define POLES 14          // Number of magnetic poles in test motor.
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
