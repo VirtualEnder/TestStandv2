@@ -2,8 +2,7 @@
 
 Pin connections for this software:
 
-PWM Output(125us-250us):     Pin 14 or PB_6
-PWM Output(1000-2000us):     Pin 36 or PC_5
+PWM Output:                  Pin 14 or PB_6
 Current Sensor:              Pin 29 or PE_2 
 Voltage Sensor:              Pin 28 or PE_3
 Load Cell Amp HX711.DOUT     Pin 9 or PA_6
@@ -25,7 +24,8 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
-#include "HX711.h"           //Requires HX711 Library from: https://github.com/bogde/HX711
+#include "inc/hw_timer.h"
+#include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
 #include <EEPROM.h>
 #include <Servo.h> 
 
@@ -42,9 +42,6 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
 #define LSCALE -700       // Scale factor for load cell amplifier.
-
-//IO pins
-int ESCPin=36;            // ESC PWM output pin
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -65,17 +62,9 @@ volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
 
-// PWM Output variables
-unsigned long dutyCycle = 125;
-
-
 // Misc Variables
-Servo ESC;
 char character;
 String input;
-String calibrationWeight;
-float calibration;
-int calibrationmass;
 unsigned long startTime;
 unsigned long loopStart;
 boolean isTestRunning = false;
@@ -88,41 +77,11 @@ union f_bytes
   float fval;
 }u;
 
-float readFloatFromEEPROM(int address)
-{
-  for(char i=0;i<4;i++)
-  {
-    u.b[i]=EEPROM.read(address+i);
-  }
-  // if the read float is nan, clear the eeprom
-  if(u.fval!=u.fval)
-  {
-    EEPROM.write(address,0);
-    EEPROM.write(address+1,0);
-    EEPROM.write(address+2,0);
-    EEPROM.write(address+3,0);
-  }
-  return u.fval;
-}
-void saveFloatToEEPROM(float toSave,int address)
-{
-  u.fval=toSave;
-  for(char i=0;i<4;i++)
-  {
-    EEPROM.write(address+i,u.b[i]);
-  }
-  
-}
-
 void setup() {
   
   // initialize serial communication:
   Serial.begin(UARTBAUD);
-  
-  // attach ESC servo output
-  ESC.attach(ESCPin,MINTHROTTLE,MAXTHROTTLE);
-  ESC.writeMicroseconds(MINCOMMAND);  // Ensure throttle is at 0
-  
+    
   // attach Interupt for RPM sensor
   if(MAGSENS) {
     pinMode(33, OUTPUT);
@@ -137,14 +96,11 @@ void setup() {
     attachInterrupt(PUSH2, countRpms2, FALLING);
   }
   
-  
-  //calibration=readFloatFromEEPROM(4);  
-  
   scale.set_scale(LSCALE);  // Eventually set this via EEPROM
   scale.tare();	// Reset the scale to 0
   
   initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
-  initPWMOut(4000);     // Start PWM output at 4khz (250us)
+  initPWMOut(20800);           // Start PWM output at 4khz (250us)on Timer1
 }
 
 void countRpms () {
@@ -174,11 +130,11 @@ void loop() {
   isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;
-  ESC.writeMicroseconds(MINCOMMAND);  // Double check throttle is at 0
+  updatePWM(MINCOMMAND);  // Double check throttle is at 0
   
   if(!isTared) {
     scale.tare();
-    isTared = false;
+    isTared = true;
   }
   
   // Prompt for input and read it
@@ -212,10 +168,10 @@ void loop() {
         delay(1);
     }
     if(input.indexOf("e") < 0) {
-      ESC.writeMicroseconds(MAXTHROTTLE - 15);  // Calibrate to Max throttle -15 usecs to ensure full throttle is reached.
+      updatePWM(MAXTHROTTLE - 15);  // Calibrate to Max throttle -15 usecs to ensure full throttle is reached.
       Serial.println("Plug in the ESC to battery power and wait for the calibration beeps, then press any key to continue.");
       while(!Serial.available());
-      ESC.writeMicroseconds(MINTHROTTLE);      // Set bottom of range
+      updatePWM(MINTHROTTLE);      // Set bottom of range
       Serial.println("Once calibration has finished unplug the battery and hit any key to continue");
       while(!Serial.available());
       Serial.println("ESC Calibration Complete, thank you!");
@@ -228,7 +184,7 @@ void loop() {
     
     // Idle for 4 seconds
     startTime=micros();
-    ESC.writeMicroseconds(1100);
+    updatePWM(1100);
     while(!Serial.available()&& micros()-startTime < 4000000) {
     }
     while(Serial.available()) {
@@ -282,7 +238,7 @@ void loop() {
       else if(currentLoopTime<8000000)
         escMicros = 1100;
       else if(currentLoopTime<10000000)
-        escMicros = 2000;
+        escMicros = MAXTHROTTLE;
       else if(currentLoopTime<11000000)
         escMicros = MINCOMMAND;
       else if(currentLoopTime<12000000 && !isTared) {
@@ -294,7 +250,7 @@ void loop() {
         // Iterate through whole throttle range based on time
         escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;   
       else if(currentLoopTime<20000000)
-        escMicros = 2000;
+        escMicros = MAXTHROTTLE;
       else if(currentLoopTime<=22000000)
         escMicros = 1100;
       else if(currentLoopTime<=24000000)
@@ -304,9 +260,7 @@ void loop() {
         isTared = false;
       }
       if(escMicros != currentMicros) {
-        ESC.writeMicroseconds(escMicros);
-        unsigned long PWMOutDuty = (((float)(escMicros - 1000)/1000)*10000) + 10000;
-        TimerMatchSet(TIMER1_BASE, TIMER_A, PWMOutDuty);
+        updatePWM(escMicros);
         currentMicros = escMicros;
       }
       
@@ -432,7 +386,7 @@ void Timer0IntHandler() {
 
 }
 
-void initPWMOut (unsigned Hz) { 
+void initPWMOut (unsigned clockTicks) { 
     
     // Disable on board LEDs
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
@@ -445,10 +399,21 @@ void initPWMOut (unsigned Hz) {
     GPIOPinTypeTimer(GPIO_PORTB_BASE, GPIO_PIN_6);
 
     // Configure timer
-    unsigned long ulPeriod = (SysCtlClockGet () / Hz);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
-    TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM);
-    TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1);
-    TimerMatchSet(TIMER1_BASE, TIMER_A, (ulPeriod / 2)); // PWM
+    TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM);                               // Set timer to PWM mode
+    HWREG(TIMER1_BASE + TIMER_O_TAMR) |= (TIMER_TAMR_TAMRSU | TIMER_TAMR_TAPLO | TIMER_TAMR_TAILD);  // Set PWM to default high instead of low, delay changes to period and match till next cycle
+    TimerLoadSet(TIMER1_BASE, TIMER_A, clockTicks - 1);                                              // Set PWM period to received period
+    TimerMatchSet(TIMER1_BASE, TIMER_A, 10000);                                                      // Set PWM to match to 125us
     TimerEnable(TIMER1_BASE, TIMER_A);
+}
+
+void updatePWM(unsigned escMicros) {
+  
+        //Prevent escMicros from overflowing the timer
+        if (escMicros > 2075) {
+          escMicros = 2075;
+        }
+        // Convert 1000-2000us range to 125-250us range and apply to PWM output
+        TimerMatchSet(TIMER1_BASE, TIMER_A, (((float)(escMicros - 1000)/1000)*10000) + 10000); 
+        
 }
