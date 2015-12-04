@@ -18,16 +18,16 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "inc/hw_memmap.h" 
 #include "inc/hw_types.h" 
 #include "inc/hw_ints.h" 
+#include "inc/hw_timer.h"
 #include "driverlib/Debug.h" 
 #include "driverlib/interrupt.h" 
 #include "driverlib/sysctl.h" 
+#include "driverlib/pin_map.h"
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
-#include "inc/hw_timer.h"
 #include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
 #include <EEPROM.h>
-#include <Servo.h> 
 
 // Configuration options
 #define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
@@ -78,6 +78,8 @@ union f_bytes
 }u;
 
 void setup() {
+  
+  SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);  // Set system clock to 80mhz
   
   // initialize serial communication:
   Serial.begin(UARTBAUD);
