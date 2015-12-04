@@ -102,7 +102,7 @@ void setup() {
   scale.tare();	// Reset the scale to 0
   
   initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
-  initPWMOut(20800);           // Start PWM output at 4khz (250us)on Timer1
+  initPWMOut(20800);           // Start PWM period to 250us (0.0125us per tick) on Timer1
 }
 
 void countRpms () {
