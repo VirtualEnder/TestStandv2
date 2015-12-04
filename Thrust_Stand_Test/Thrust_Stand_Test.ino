@@ -33,7 +33,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
 #define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
 #define MAGSENS true      // Using Magnetic RPM sensor?
-#define OPTISENS false    // Using Optical RPM sensor?
+#define OPTISENS false    // Using Magnetic RPM sensor?
 #define POLES 14          // Number of magnetic poles in test motor.
 #define MINTHROTTLE 1000  // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000  // High end of ESC calibrated range
@@ -102,7 +102,7 @@ void setup() {
   scale.tare();	// Reset the scale to 0
   
   initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
-  initPWMOut(20800);           // Start PWM period to 250us (0.0125us per tick) on Timer1
+  initPWMOut();               // Start PWM output
 }
 
 void countRpms () {
@@ -388,7 +388,7 @@ void Timer0IntHandler() {
 
 }
 
-void initPWMOut (unsigned clockTicks) { 
+void initPWMOut () { 
     
     // Disable on board LEDs
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
@@ -404,9 +404,10 @@ void initPWMOut (unsigned clockTicks) {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
     TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM);                               // Set timer to PWM mode
     HWREG(TIMER1_BASE + TIMER_O_TAMR) |= (TIMER_TAMR_TAMRSU | TIMER_TAMR_TAPLO | TIMER_TAMR_TAILD);  // Set PWM to default high instead of low, delay changes to period and match till next cycle
-    TimerLoadSet(TIMER1_BASE, TIMER_A, clockTicks - 1);                                              // Set PWM period to received period
-    TimerMatchSet(TIMER1_BASE, TIMER_A, 10000);                                                      // Set PWM to match to 125us
+    TimerLoadSet(TIMER1_BASE, TIMER_A, ((((float)(MAXTHROTTLE - 1000)/1000)*10000) + 10000) + 799);    // Set PWM period to MAXTHROTTLE + 10us margin
+    updatePWM(MINCOMMAND);                                                                           // Set PWM Timer match to MINTHROTTLE
     TimerEnable(TIMER1_BASE, TIMER_A);
+    
 }
 
 void updatePWM(unsigned escMicros) {
