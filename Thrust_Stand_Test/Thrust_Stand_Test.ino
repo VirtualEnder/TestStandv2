@@ -41,7 +41,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define OVERSAMPLING 64   // Analog oversampling multiplier
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
-#define LSCALE -700       // Scale factor for load cell amplifier.
+#define LSCALE -442       // Scale factor for load cell amplifier.
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -56,13 +56,14 @@ volatile unsigned int stepTime2 = 0;
 volatile unsigned int RPMs1 = 0;
 volatile unsigned int RPMs2 = 0;
 
-// analog value variables
+// analog value variablesyour
 unsigned long ulADC0Value[8];
 volatile int voltageValue = 0;
 volatile int currentValue = 0;
 volatile int thrust = 0;
 
 // Misc Variables
+unsigned int ulPeriod = (((MAXTHROTTLE - 1000)*10) + 10000) + 799;
 char character;
 String input;
 unsigned long startTime;
@@ -101,7 +102,7 @@ void setup() {
   scale.set_scale(LSCALE);  // Eventually set this via EEPROM
   scale.tare();	// Reset the scale to 0
   
-  initTimer0(SENSORRATE);     // Start timer for load cell and analog reads
+  adcTimer(SENSORRATE);     // Start timer for load cell and analog reads
   initPWMOut();               // Start PWM output
 }
 
@@ -342,7 +343,7 @@ void loop() {
   delay(1);
 }
 
-void initTimer0 (unsigned Hz) { 
+void adcTimer (unsigned Hz) { 
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
   ADCHardwareOversampleConfigure(ADC0_BASE, OVERSAMPLING);
   ADCSequenceDisable(ADC0_BASE, 0);
@@ -359,18 +360,18 @@ void initTimer0 (unsigned Hz) {
   ADCSequenceEnable(ADC0_BASE, 0);
   ADCIntClear(ADC0_BASE, 0);
   
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);  
-  TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC); 
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);  
+  TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
   unsigned long ulPeriod = (SysCtlClockGet () / Hz);
-  TimerLoadSet(TIMER0_BASE, TIMER_A, ulPeriod -1); 
-  IntEnable(INT_TIMER0A); 
-  TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT); 
-  TimerIntRegister(TIMER0_BASE, TIMER_A, Timer0IntHandler); 
-  TimerEnable(TIMER0_BASE, TIMER_A); 
+  TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
+  IntEnable(INT_TIMER1A); 
+  TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
+  TimerIntRegister(TIMER1_BASE, TIMER_A, Timer1IntHandler); 
+  TimerEnable(TIMER1_BASE, TIMER_A); 
 }
 
-void Timer0IntHandler() {
-  TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+void Timer1IntHandler() {
+  TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
     if(ADCIntStatus(ADC0_BASE, 0, false)){
       ADCIntClear(ADC0_BASE, 0);
@@ -390,33 +391,33 @@ void Timer0IntHandler() {
 
 void initPWMOut () { 
     
-    // Disable on board LEDs
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
-
     // Configure PB6 as T0CCP0
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     GPIOPinConfigure(GPIO_PB6_T0CCP0);
     GPIOPinTypeTimer(GPIO_PORTB_BASE, GPIO_PIN_6);
 
     // Configure timer
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
-    TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM);                               // Set timer to PWM mode
-    HWREG(TIMER1_BASE + TIMER_O_TAMR) |= (TIMER_TAMR_TAMRSU | TIMER_TAMR_TAPLO | TIMER_TAMR_TAILD);  // Set PWM to default high instead of low, delay changes to period and match till next cycle
-    TimerLoadSet(TIMER1_BASE, TIMER_A, ((((float)(MAXTHROTTLE - 1000)/1000)*10000) + 10000) + 799);    // Set PWM period to MAXTHROTTLE + 10us margin
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+    TimerConfigure(TIMER0_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM); 
+    TimerControlLevel(TIMER0_BASE, TIMER_A, 1); // Timer 0 is trigger low                              // Set timer to PWM mode
+    //HWREG(TIMER0_BASE + TIMER_O_TAMR) |= (TIMER_TAMR_TAMRSU | TIMER_TAMR_TAPLO | TIMER_TAMR_TAILD);  // Set PWM to default high instead of low, delay changes to period and match till next cycle
+    TimerLoadSet(TIMER0_BASE, TIMER_A, 20800 - 1);                                                   // Set PWM period to MAXTHROTTLE + 10us margin
     updatePWM(MINCOMMAND);                                                                           // Set PWM Timer match to MINTHROTTLE
-    TimerEnable(TIMER1_BASE, TIMER_A);
+    TimerEnable(TIMER0_BASE, TIMER_A);
     
 }
 
-void updatePWM(unsigned escMicros) {
-  
+void updatePWM(unsigned pulseWidth) {
         //Prevent escMicros from overflowing the timer
-        if (escMicros > 2075) {
-          escMicros = 2075;
+        if (pulseWidth > 2075) {
+          //pulseWidth = 2075;
         }
         // Convert 1000-2000us range to 125-250us range and apply to PWM output
-        TimerMatchSet(TIMER1_BASE, TIMER_A, (((float)(escMicros - 1000)/1000)*10000) + 10000); 
+        unsigned int dutyCycle = (pulseWidth *10);
+        /*Serial.print("Pulse Width: ");
+        Serial.print(pulseWidth);
+        Serial.print(" Duty Cycle: ");
+        Serial.println(dutyCycle);*/
+        TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
         
 }
