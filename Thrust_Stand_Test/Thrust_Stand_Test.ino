@@ -49,27 +49,27 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 HX711 scale(9, 8);	
 
 // RPM input variables
-volatile unsigned int stepCount1 = 0;
-volatile unsigned int stepCount2 = 0;
-volatile unsigned int stepTime1 = 0;
-volatile unsigned int stepTime2 = 0;
-volatile unsigned int RPMs1 = 0;
-volatile unsigned int RPMs2 = 0;
+volatile uint16_t stepCount1 = 0;
+volatile uint16_t stepCount2 = 0;
+volatile uint32_t stepTime1 = 0;
+volatile uint32_t stepTime2 = 0;
+volatile uint16_t RPMs1 = 0;
+volatile uint16_t RPMs2 = 0;
 
 // analog value variablesyour
-unsigned long ulADC0Value[8];
-volatile int voltageValue = 0;
-volatile int currentValue = 0;
-volatile int thrust = 0;
+unsigned uint32_t ulADC0Value[8];
+volatile uint16_t voltageValue = 0;
+volatile uint16_t currentValue = 0;
+volatile uint16_t thrust = 0;
 
 // Misc Variables
-unsigned int ulPeriod = (((MAXTHROTTLE - 1000)*10) + 10000) + 799;
+uint16_t ulPeriod = (((MAXTHROTTLE - 1000)*10) + 10000) + 799;
 char character;
 String input;
-unsigned long startTime;
-unsigned long loopStart;
+uint32_t startTime;
+uint32_t loopStart;
 boolean isTestRunning = false;
-unsigned int currentMicros = 0;
+uint16_t currentMicros = 0;
 boolean isTared = false;
 
 union f_bytes
@@ -109,8 +109,8 @@ void setup() {
 void countRpms () {
   if(isTestRunning) {
     stepCount1++;    // Increase Step counter
-    unsigned long stepMicros1 = micros();
-    unsigned long lastStep1 = stepTime1;
+    unsigned uint32_t stepMicros1 = micros();
+    unsigned uint32_t lastStep1 = stepTime1;
     stepTime1 = micros();
     // Calculate RPMs from step time.
     RPMs1 = ((((float)1/(float)(stepMicros1 - lastStep1))*1000000)/(POLES/2))*60;
@@ -120,8 +120,8 @@ void countRpms () {
 void countRpms2 () {
   if(isTestRunning) {
     stepCount2++;    // Increase Step counter
-    unsigned long stepMicros2 = micros();
-    unsigned long lastStep2 = stepTime2;
+    uint32_t stepMicros2 = micros();
+    uint32_t lastStep2 = stepTime2;
     stepTime2 = micros();
     // Calculate RPMs from step time.
     RPMs2 = ((((float)1/(float)(stepMicros2 - lastStep2))*1000000)/(POLES/2))*60;
@@ -231,7 +231,7 @@ void loop() {
     
     while(!Serial.available() && isTestRunning) {
       loopStart = micros(); 
-      int currentLoopTime = micros()-startTime;
+      uint16_t currentLoopTime = micros()-startTime;
       if(currentLoopTime<2000000)
         escMicros = 1250;
       else if(currentLoopTime<4000000)
@@ -318,7 +318,7 @@ void loop() {
       // minimum looptime is set to 1ms for all higher baud rates.
 
       int thisDelay;
-      unsigned int loopTime = micros() - loopStart;
+      uint16_t loopTime = micros() - loopStart;
       switch(UARTBAUD) {
         case 115200:
           thisDelay = (1897 - loopTime);
@@ -362,7 +362,7 @@ void adcTimer (unsigned Hz) {
   
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);  
   TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC); 
-  unsigned long ulPeriod = (SysCtlClockGet () / Hz);
+  uint32_t ulPeriod = (SysCtlClockGet () / Hz);
   TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER1A); 
   TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
@@ -413,7 +413,7 @@ void updatePWM(unsigned pulseWidth) {
           //pulseWidth = 2075;
         }
         // Convert 1000-2000us range to 125-250us range and apply to PWM output
-        unsigned int dutyCycle = (pulseWidth *10);
+        uint16_t dutyCycle = (pulseWidth *10);
         /*Serial.print("Pulse Width: ");
         Serial.print(pulseWidth);
         Serial.print(" Duty Cycle: ");
