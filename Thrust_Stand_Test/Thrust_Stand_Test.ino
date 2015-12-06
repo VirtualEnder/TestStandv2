@@ -41,7 +41,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define OVERSAMPLING 64   // Analog oversampling multiplier
 #define VSCALE 26         // Scale factor for Voltage divider.
 #define CSCALE 100        // Scale factor for current sensor.
-#define LSCALE -442       // Scale factor for load cell amplifier.
+#define LSCALE -395       // Scale factor for load cell amplifier.
 
 // Scale Pins
 // HX711.DOUT	- pin #9
