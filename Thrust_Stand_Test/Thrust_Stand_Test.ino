@@ -57,14 +57,14 @@ volatile uint32_t RPMs1 = 0;
 volatile uint32_t RPMs2 = 0;
 
 // analog value variablesyour
-unsigned uint64_t ulADC0Value[8];
+uint64_t ulADC0Value[8];
 volatile uint32_t voltageValue = 0;
 volatile uint32_t currentValue = 0;
 volatile uint32_t thrust = 0;
 
 // Misc Variables
 uint32_t ulPeriod = (((MAXTHROTTLE - 1000)*10) + 10000) + 799;
-char character;
+uint8_t character;
 String input;
 uint64_t startTime;
 uint64_t loopStart;
