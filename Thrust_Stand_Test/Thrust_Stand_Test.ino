@@ -57,7 +57,7 @@ volatile uint32_t RPMs1 = 0;
 volatile uint32_t RPMs2 = 0;
 
 // analog value variablesyour
-uint64_t ulADC0Value[8];
+uint32_t ulADC0Value[8];
 volatile uint32_t voltageValue = 0;
 volatile uint32_t currentValue = 0;
 volatile uint32_t thrust = 0;
@@ -399,10 +399,9 @@ void initPWMOut () {
     // Configure timer
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
     TimerConfigure(TIMER0_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM); 
-    TimerControlLevel(TIMER0_BASE, TIMER_A, 1); // Timer 0 is trigger low                              // Set timer to PWM mode
-    //HWREG(TIMER0_BASE + TIMER_O_TAMR) |= (TIMER_TAMR_TAMRSU | TIMER_TAMR_TAPLO | TIMER_TAMR_TAILD);  // Set PWM to default high instead of low, delay changes to period and match till next cycle
-    TimerLoadSet(TIMER0_BASE, TIMER_A, 20800 - 1);                                                   // Set PWM period to MAXTHROTTLE + 10us margin
-    updatePWM(MINCOMMAND);                                                                           // Set PWM Timer match to MINTHROTTLE
+    TimerControlLevel(TIMER0_BASE, TIMER_A, 1);                            // Set timer to PWM mode
+    TimerLoadSet(TIMER0_BASE, TIMER_A, 20800 - 1);                         // Set PWM period 260us
+    updatePWM(MINCOMMAND);                                                 // Set PWM Timer match to MINTHROTTLE
     TimerEnable(TIMER0_BASE, TIMER_A);
     
 }
