@@ -108,10 +108,10 @@ void setup() {
 
 void countRpms () {
   if(isTestRunning) {
-    stepCount1++;    // Increase Step counter
     uint64_t stepMicros1 = micros();
     uint64_t lastStep1 = stepTime1;
-    stepTime1 = micros();
+    stepTime1 = stepMicros1;
+    stepCount1++;    // Increase Step counter
     // Calculate RPMs from step time.
     RPMs1 = ((((float)1/(float)(stepMicros1 - lastStep1))*1000000)/(POLES/2))*60;
   }
@@ -119,10 +119,10 @@ void countRpms () {
 
 void countRpms2 () {
   if(isTestRunning) {
-    stepCount2++;    // Increase Step counter
     uint64_t stepMicros2 = micros();
     uint64_t lastStep2 = stepTime2;
-    stepTime2 = micros();
+    stepTime2 = stepMicros2;
+    stepCount2++;    // Increase Step counter
     // Calculate RPMs from step time.
     RPMs2 = ((((float)1/(float)(stepMicros2 - lastStep2))*1000000)/(POLES/2))*60;
   }
