@@ -27,21 +27,25 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
 #include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
+#include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
 
 // Configuration options
-#define UARTBAUD 921600   // UART Baud rate (DO NOT set to less than 115200) 
-#define SENSORRATE 500    // Refresh rate in HZ of load cell and analog read timer.
-#define MAGSENS true      // Using Magnetic RPM sensor?
-#define OPTISENS false    // Using Magnetic RPM sensor?
-#define POLES 14          // Number of magnetic poles in test motor.
-#define MINTHROTTLE 1000  // Low end of ESC calibrated range
-#define MAXTHROTTLE 2000  // High end of ESC calibrated range
-#define MINCOMMAND 980    // Value sent to ESC when test isn't running.
-#define OVERSAMPLING 64   // Analog oversampling multiplier
-#define VSCALE 26         // Scale factor for Voltage divider.
-#define CSCALE 100        // Scale factor for current sensor.
-#define LSCALE -395       // Scale factor for load cell amplifier.
+#define UARTBAUD 921600    // UART Baud rate (DO NOT set to less than 115200) 
+#define SENSORRATE 500     // Refresh rate in HZ of load cell and analog read timer.
+#define MAGSENS true       // Using Magnetic RPM sensor?
+#define OPTISENS false     // Using Magnetic RPM sensor?
+#define POLES 14           // Number of magnetic poles in test motor.
+#define MINTHROTTLE 1000   // Low end of ESC calibrated range
+#define MAXTHROTTLE 2000   // High end of ESC calibrated range
+#define MINCOMMAND 980     // Value sent to ESC when test isn't running.
+#define OVERSAMPLING 64    // Analog oversampling multiplier
+#define VSCALE 26          // Scale factor for Voltage divider.
+#define CSCALE 100         // Scale factor for current sensor.
+#define LSCALE -395        // Scale factor for load cell amplifier.
+#define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
+#define BRAKEMINRPM 3800   // Maximum RPM limit used in braking test.
+#define BRAKERPMSAMPLE 150 // Sample size of RPM averaging for target RPM detection during brake test.
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -147,7 +151,7 @@ void loop() {
   while(Serial.available()) {
       character = Serial.read();
       input.concat(character);
-      delay(1);
+      delay(2);
   }
   Serial.print("Input: ");
   Serial.println(input);
@@ -194,12 +198,142 @@ void loop() {
         character = Serial.read();
         delay(1);
     }
+    isTared = false;
+  }
+  
+  if(input.indexOf("b") >= 0) {
+    
+    // Print CSV header output
+    Serial.println("Begining automated braking test, press any key to exit");
+    delay(2000);
+    
+    startTime=micros();
+    isTestRunning = true;
+    uint16_t escMicros = MINCOMMAND;
+    uint16_t minRPMThrottle = 0;
+    uint16_t maxRPMThrottle = 0;
+    Average<uint16_t> avgRPMs(BRAKERPMSAMPLE);
+    
+    Serial.println("Calibrating Braking RPMs");
+    while(!Serial.available() && isTestRunning) {
+      
+      loopStart = micros(); 
+      uint32_t currentLoopTime = loopStart-startTime;
+      
+      if(currentLoopTime<6000000) 
+        // Iterate through whole throttle range based on time
+        escMicros = (((float)(currentLoopTime)/6000000.0)* 1000)+1000;
+      else if(currentLoopTime<=8000000) 
+        escMicros = MINCOMMAND;
+      else {
+        isTestRunning = false;
+        isTared = false;
+      }
+      if(escMicros != currentMicros) {
+        updatePWM(escMicros);
+        currentMicros = escMicros;
+      }
+      for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
+        delayMicroseconds(980);
+        if(MAGSENS) {
+          avgRPMs.push(RPMs1);
+        } 
+        if(OPTISENS) {
+          avgRPMs.push(RPMs2);
+        }
+      }
+      Serial.println("Cycle time: " + (loopStart - micros()) );
+      if(avgRPMs.mean() > BRAKEMINRPM && minRPMThrottle == 0) {
+        minRPMThrottle = currentMicros;
+      }
+      if(avgRPMs.mean() > BRAKEMAXRPM && maxRPMThrottle == 0) {
+        maxRPMThrottle = currentMicros;
+      }
+    }
+    
+    scale.tare();
+    Serial.println("Beginning Brake test:");\
+    delay(2000);
+    
+    // Print CSV header output
+    Serial.print("Thrust(g),");
+    if(MAGSENS) {
+      Serial.print("mSteps,");
+    }
+    if(OPTISENS) {
+      Serial.print("oSteps,");
+    }
+    Serial.print("Throttle(uS),");
+    Serial.print("Time(uS),");
+    if(MAGSENS) {
+      Serial.print("mPRMs,");
+    }
+    if(OPTISENS) {
+      Serial.print("oRPMs,");
+    }
+    
+    // Initiate test run
+    startTime=micros();
+    isTestRunning = true;
+    escMicros = MINCOMMAND;
+    
+    while(!Serial.available() && isTestRunning ) {
+      loopStart = micros(); 
+      uint32_t currentLoopTime = loopStart-startTime;
+      if(currentLoopTime<2000000)
+        escMicros = minRPMThrottle;
+      else if(currentLoopTime<4000000)
+        escMicros = maxRPMThrottle;
+      else if(currentLoopTime<6000000)
+        escMicros = minRPMThrottle;
+      else if(currentLoopTime<8000000)
+        escMicros = MINCOMMAND;
+      else {
+        isTestRunning = false;
+        isTared = false;
+      }
+      if(escMicros != currentMicros) {
+        updatePWM(escMicros);
+        currentMicros = escMicros;
+      }
+      
+      // Print out data
+      
+      Serial.print(thrust);
+      Serial.print(",");
+      if(MAGSENS) {
+        Serial.print(stepCount1);
+        Serial.print(",");
+      }
+      if(OPTISENS) {
+        Serial.print(stepCount2);
+        Serial.print(","); 
+      }
+      Serial.print(escMicros);
+      Serial.print(",");
+      Serial.print(currentLoopTime);
+      Serial.print(",");
+      if(MAGSENS) {
+        Serial.print(RPMs1);
+        Serial.print(",");
+      }
+      if(OPTISENS) {
+        Serial.print(RPMs2);
+        Serial.print(",");
+      }
+    }
+    
+    minRPMThrottle = 0;
+    maxRPMThrottle = 0;
+    RPMs1 = 0;
+    RPMs2 = 0;
+    
   }
   
   if(input.indexOf("s") >= 0) {
     input="";
     
-    //Create CSV header output
+    // Print CSV header output
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
     Serial.print("Thrust(g),");
@@ -227,11 +361,12 @@ void loop() {
     // Initiate test run
     startTime=micros();
     isTestRunning = true;
-    int escMicros = MINCOMMAND;
+    isTared = false;
+    uint16_t escMicros = MINCOMMAND;
     
     while(!Serial.available() && isTestRunning) {
       loopStart = micros(); 
-      uint32_t currentLoopTime = micros()-startTime;
+      uint32_t currentLoopTime = loopStart-startTime;
       if(currentLoopTime<2000000)
         escMicros = 1250;
       else if(currentLoopTime<4000000)
@@ -271,12 +406,15 @@ void loop() {
       // This means that the minimum RPMs the code is capable of detecting is
       // 120 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
       // at about 2000 rpms.
-      if(micros()-stepTime1 > 500000) {
+      if(loopStart-stepTime1 > 500000) {
         RPMs1 = 0;
       }
-      if(micros()-stepTime1 > 500000) {
-        RPMs1 = 0;
+      if(loopStart-stepTime2 > 500000) {
+        RPMs2 = 0;
       }
+      
+      // Print out data
+      
       Serial.print(thrust);
       Serial.print(",");
       /*
@@ -412,7 +550,7 @@ void updatePWM(unsigned pulseWidth) {
           //pulseWidth = 2075;
         }
         // Convert 1000-2000us range to 125-250us range and apply to PWM output
-        uint32_t dutyCycle = (pulseWidth *10);
+        uint32_t dutyCycle = (pulseWidth *10) - 1;
         /*Serial.print("Pulse Width: ");
         Serial.print(pulseWidth);
         Serial.print(" Duty Cycle: ");
