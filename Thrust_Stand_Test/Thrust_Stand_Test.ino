@@ -115,9 +115,9 @@ void countRpms () {
     uint64_t stepMicros1 = micros();
     uint64_t lastStep1 = stepTime1;
     stepTime1 = stepMicros1;
-    stepCount1++;    // Increase Step counter
     // Calculate RPMs from step time.
     RPMs1 = ((((float)1/(float)(stepMicros1 - lastStep1))*1000000)/(POLES/2))*60;
+    stepCount1++;    // Increase Step counter
   }
 }
 
@@ -126,9 +126,9 @@ void countRpms2 () {
     uint64_t stepMicros2 = micros();
     uint64_t lastStep2 = stepTime2;
     stepTime2 = stepMicros2;
-    stepCount2++;    // Increase Step counter
     // Calculate RPMs from step time.
     RPMs2 = ((((float)1/(float)(stepMicros2 - lastStep2))*1000000)/(POLES/2))*60;
+    stepCount2++;    // Increase Step counter
   }
 }
 
@@ -159,6 +159,7 @@ void loop() {
   //Check input
   
   if(input.indexOf("t") >= 0) {
+    delay(20);
     input="";
     Serial.println("Taring");
     scale.tare();
@@ -167,6 +168,7 @@ void loop() {
     input="";
     
     // Start ESC Calibration Routine
+    delay(20);
     Serial.println("Please make SURE the ESC is unplugged from power, then hit any key. Otherwise press 'e' to exit");
     while(!Serial.available());
     while(Serial.available()) {
@@ -175,6 +177,7 @@ void loop() {
         delay(1);
     }
     if(input.indexOf("e") < 0) {
+      delay(20);
       updatePWM(MAXTHROTTLE - 15);  // Calibrate to Max throttle -15 usecs to ensure full throttle is reached.
       Serial.println("Plug in the ESC to battery power and wait for the calibration beeps, then press any key to continue.");
       while(!Serial.available());
@@ -186,6 +189,7 @@ void loop() {
     }
   }
   if(input.indexOf("i") >= 0) {
+    delay(20);
     Serial.println("Idling, press any key to exit");
     delay(2000);
     
@@ -203,7 +207,7 @@ void loop() {
   
   if(input.indexOf("b") >= 0) {
     
-    // Print CSV header output
+    delay(20);
     Serial.println("Begining automated braking test, press any key to exit");
     delay(2000);
     
@@ -251,96 +255,106 @@ void loop() {
       }
     }
     
-    scale.tare();
-    Serial.println("Beginning Brake test:");\
-    delay(2000);
-    
-    // Print CSV header output
-    Serial.print("Thrust(g),");
-    if(MAGSENS) {
-      Serial.print("mSteps,");
-    }
-    if(OPTISENS) {
-      Serial.print("oSteps,");
-    }
-    Serial.print("Throttle(uS),");
-    Serial.print("Time(uS),");
-    if(MAGSENS) {
-      Serial.print("mPRMs,");
-    }
-    if(OPTISENS) {
-      Serial.print("oRPMs,");
-    }
-    
-    // Initiate test run
-    startTime=micros();
-    isTestRunning = true;
-    escMicros = MINCOMMAND;
-    
-    while(!Serial.available() && isTestRunning ) {
-      loopStart = micros(); 
-      uint32_t currentLoopTime = loopStart-startTime;
-      if(currentLoopTime<2000000)
-        escMicros = minRPMThrottle;
-      else if(currentLoopTime<4000000)
-        escMicros = maxRPMThrottle;
-      else if(currentLoopTime<6000000)
-        escMicros = minRPMThrottle;
-      else if(currentLoopTime<8000000)
-        escMicros = MINCOMMAND;
-      else {
-        isTestRunning = false;
-        isTared = false;
-      }
-      if(escMicros != currentMicros) {
-        updatePWM(escMicros);
-        currentMicros = escMicros;
-      }
+    if (minRPMThrottle > 0 && maxRPMThrottle > 0) {
+      scale.tare();
+      Serial.println("Beginning Brake test:");
+      Serial.print("Low Throttle: ");
+      Serial.print(minRPMThrottle);
+      Serial.print(" High Throttle: ");
+      Serial.println(maxRPMThrottle);
+      Serial.print("Low RPM Target: ");
+      Serial.print(BRAKEMINRPM);
+      Serial.print(" High RPM Target: ");
+      Serial.println(BRAKEMAXRPM);
       
-      // Print out data
+      delay(2000);
       
-      Serial.print(thrust);
-      Serial.print(",");
+      // Print CSV header output
+      Serial.print("Thrust(g),");
       if(MAGSENS) {
-        Serial.print(stepCount1);
-        Serial.print(",");
+        Serial.print("mSteps,");
       }
       if(OPTISENS) {
-        Serial.print(stepCount2);
-        Serial.print(","); 
+        Serial.print("oSteps,");
       }
-      Serial.print(escMicros);
-      Serial.print(",");
-      Serial.print(currentLoopTime);
-      Serial.print(",");
+      Serial.print("Throttle(uS),");
+      Serial.print("Time(uS),");
       if(MAGSENS) {
-        Serial.print(RPMs1);
-        Serial.print(",");
+        Serial.print("mPRMs,");
       }
       if(OPTISENS) {
-        Serial.print(RPMs2);
-        Serial.print(",");
+        Serial.print("oRPMs,");
       }
+      
+      // Initiate test run
+      startTime=micros();
+      isTestRunning = true;
+      escMicros = MINCOMMAND;
+      
+      while(!Serial.available() && isTestRunning ) {
+        loopStart = micros(); 
+        uint32_t currentLoopTime = loopStart-startTime;
+        if(currentLoopTime<2000000)
+          escMicros = minRPMThrottle;
+        else if(currentLoopTime<4000000)
+          escMicros = maxRPMThrottle;
+        else if(currentLoopTime<6000000)
+          escMicros = minRPMThrottle;
+        else if(currentLoopTime<8000000)
+          escMicros = MINCOMMAND;
+        else {
+          // End test and reset variables
+          isTared = false;
+          minRPMThrottle = 0;
+          maxRPMThrottle = 0;
+          RPMs1 = 0;
+          RPMs2 = 0;
+          isTestRunning = false;
+        }
+        if(escMicros != currentMicros) {
+          updatePWM(escMicros);
+          currentMicros = escMicros;
+        }
+        
+        // Print out data
+        
+        Serial.print(thrust);
+        Serial.print(",");
+        if(MAGSENS) {
+          Serial.print(stepCount1);
+          Serial.print(",");
+        }
+        if(OPTISENS) {
+          Serial.print(stepCount2);
+          Serial.print(","); 
+        }
+        Serial.print(escMicros);
+        Serial.print(",");
+        Serial.print(currentLoopTime);
+        Serial.print(",");
+        if(MAGSENS) {
+          Serial.print(RPMs1);
+          Serial.print(",");
+        }
+        if(OPTISENS) {
+          Serial.print(RPMs2);
+          Serial.print(",");
+        }
+      }
+    } else {
+      Serial.println("Throttle positions for target RPMs could not be aquired, aborting test!");
     }
-    
-    minRPMThrottle = 0;
-    maxRPMThrottle = 0;
-    RPMs1 = 0;
-    RPMs2 = 0;
-    
-  }
+  } // End Brake Test
   
   if(input.indexOf("s") >= 0) {
     input="";
     
-    // Print CSV header output
+    delay(20);
     Serial.println("Begining automated test, press any key to exit");
     delay(2000);
+    
+    // Print CSV header output
     Serial.print("Thrust(g),");
-    /*
-    Serial.print("Voltage,");
-    Serial.print("Current,");
-    */
     if(MAGSENS) {
       Serial.print("mSteps,");
     }
@@ -417,12 +431,6 @@ void loop() {
       
       Serial.print(thrust);
       Serial.print(",");
-      /*
-      Serial.print(voltageValue);
-      Serial.print(",");
-      Serial.print(currentValue);
-      Serial.print(",");
-      */
       if(MAGSENS) {
         Serial.print(stepCount1);
         Serial.print(",");
@@ -470,8 +478,9 @@ void loop() {
           thisDelay = (997 - loopTime);
           break;
       }  
-      if (thisDelay < 0) { thisDelay = 0; }
-      delayMicroseconds(thisDelay);
+      if (thisDelay > 0) { 
+        delayMicroseconds(thisDelay);
+      }
     }
     while(Serial.available()) {
         character = Serial.read();
@@ -546,15 +555,11 @@ void initPWMOut () {
 
 void updatePWM(unsigned pulseWidth) {
         //Prevent escMicros from overflowing the timer
-        if (pulseWidth > 2075) {
-          //pulseWidth = 2075;
-        }
+        if (pulseWidth > 2075) 
+          pulseWidth = 2075;
+        
         // Convert 1000-2000us range to 125-250us range and apply to PWM output
         uint32_t dutyCycle = (pulseWidth *10) - 1;
-        /*Serial.print("Pulse Width: ");
-        Serial.print(pulseWidth);
-        Serial.print(" Duty Cycle: ");
-        Serial.println(dutyCycle);*/
         TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
         
 }
