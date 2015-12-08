@@ -238,7 +238,7 @@ void loop() {
         currentMicros = escMicros;
       }
       for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
-        delayMicroseconds(980);
+        delayMicroseconds(90);
         if(MAGSENS) {
           avgRPMs.push(RPMs1);
         } 
