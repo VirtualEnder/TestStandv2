@@ -293,22 +293,26 @@ void mainTest() {
       else if(currentLoopTime<8000000)
         escMicros = 1100;
       else if(currentLoopTime<10000000)
+        escMicros = 1750;
+      else if(currentLoopTime<12000000)
+        escMicros = 1100;
+      else if(currentLoopTime<14000000)
         escMicros = MAXTHROTTLE;
-      else if(currentLoopTime<11000000)
+      else if(currentLoopTime<15000000)
         escMicros = MINCOMMAND;
-      else if(currentLoopTime<12000000 && !isTared) {
+      else if(currentLoopTime<16000000 && !isTared) {
         // Tare scale between passes to increase accuracy.
         scale.tare();
         isTared = true;
       } 
-      else if(currentLoopTime<18000000)
+      else if(currentLoopTime<22000000)
         // Iterate through whole throttle range based on time
-        escMicros = (((float)(currentLoopTime-12000000)/6000000.0)* 1000)+1000;   
-      else if(currentLoopTime<20000000)
+        escMicros = (((float)(currentLoopTime-16000000)/6000000.0)* 1000)+1000;   
+      else if(currentLoopTime<24000000)
         escMicros = MAXTHROTTLE;
-      else if(currentLoopTime<=22000000)
+      else if(currentLoopTime<=26000000)
         escMicros = 1100;
-      else if(currentLoopTime<=24000000)
+      else if(currentLoopTime<=28000000)
         escMicros = MINCOMMAND;
       else {
         isTestRunning = false;
