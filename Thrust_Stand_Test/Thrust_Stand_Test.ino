@@ -36,7 +36,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define MAGSENS true       // Using Magnetic RPM sensor?
 #define OPTISENS false     // Using Magnetic RPM sensor?
 #define POLES 14           // Number of magnetic poles in test motor.
-#define MINTHROTTLE 1000   // Low end of ESC calibrated range
+#define MINTHROTTLE 1030   // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000   // High end of ESC calibrated range
 #define MINCOMMAND 980     // Value sent to ESC when test isn't running.
 #define OVERSAMPLING 64    // Analog oversampling multiplier
@@ -44,8 +44,8 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #define CSCALE 100         // Scale factor for current sensor.
 #define LSCALE -395        // Scale factor for load cell amplifier.
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
-#define BRAKEMINRPM 3800   // Maximum RPM limit used in braking test.
-#define BRAKERPMSAMPLE 150 // Sample size of RPM averaging for target RPM detection during brake test.
+#define BRAKEMINRPM 8000   // Maximum RPM limit used in braking test.
+#define BRAKERPMSAMPLE 250 // Sample size of RPM averaging for target RPM detection during brake test.
 
 // Scale Pins
 // HX711.DOUT	- pin #9
@@ -68,7 +68,7 @@ volatile uint32_t thrust = 0;
 
 // Misc Variables
 uint32_t ulPeriod = (((MAXTHROTTLE - 1000)*10) + 10000) + 799;
-uint8_t character;
+char character;
 String input;
 uint64_t startTime;
 uint64_t loopStart;
@@ -116,7 +116,7 @@ void countRpms () {
     uint64_t lastStep1 = stepTime1;
     stepTime1 = stepMicros1;
     // Calculate RPMs from step time.
-    RPMs1 = ((((float)1/(float)(stepMicros1 - lastStep1))*1000000)/(POLES/2))*60;
+    RPMs1 = stepMicros1 - lastStep1;
     stepCount1++;    // Increase Step counter
   }
 }
@@ -127,7 +127,7 @@ void countRpms2 () {
     uint64_t lastStep2 = stepTime2;
     stepTime2 = stepMicros2;
     // Calculate RPMs from step time.
-    RPMs2 = ((((float)1/(float)(stepMicros2 - lastStep2))*1000000)/(POLES/2))*60;
+    RPMs2 = stepMicros2 - lastStep2;
     stepCount2++;    // Increase Step counter
   }
 }
@@ -145,7 +145,7 @@ void loop() {
   }
   
   // Prompt for input and read it
-  Serial.println("Type t(Tare), c(Calibrate), s(Start), or i(Idle)");
+  Serial.println("Type t(Tare), c(Calibrate), b(Brake Test), s(Start), or i(Idle)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -211,7 +211,6 @@ void loop() {
     Serial.println("Begining automated braking test, press any key to exit");
     delay(2000);
     
-    startTime=micros();
     isTestRunning = true;
     uint16_t escMicros = MINCOMMAND;
     uint16_t minRPMThrottle = 0;
@@ -219,15 +218,23 @@ void loop() {
     Average<uint16_t> avgRPMs(BRAKERPMSAMPLE);
     
     Serial.println("Calibrating Braking RPMs");
+    delay(1000);
+    escMicros = MINTHROTTLE;
+    updatePWM(escMicros);
+    delay(2000);
+    
+    startTime=micros();
     while(!Serial.available() && isTestRunning) {
       
       loopStart = micros(); 
       uint32_t currentLoopTime = loopStart-startTime;
-      
+      if (currentLoopTime <= 0) {
+        currentLoopTime = 1;
+      }
       if(currentLoopTime<6000000) 
         // Iterate through whole throttle range based on time
-        escMicros = (((float)(currentLoopTime)/6000000.0)* 1000)+1000;
-      else if(currentLoopTime<=8000000) 
+        escMicros = (((float)(currentLoopTime)/6000000.0)*(2000-MINTHROTTLE))+ MINTHROTTLE;
+      else if(currentLoopTime<=7000000) 
         escMicros = MINCOMMAND;
       else {
         isTestRunning = false;
@@ -238,7 +245,7 @@ void loop() {
         currentMicros = escMicros;
       }
       for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
-        delayMicroseconds(90);
+        delayMicroseconds(200);
         if(MAGSENS) {
           avgRPMs.push(RPMs1);
         } 
@@ -246,11 +253,17 @@ void loop() {
           avgRPMs.push(RPMs2);
         }
       }
-      Serial.println("Cycle time: " + (loopStart - micros()) );
-      if(avgRPMs.mean() > BRAKEMINRPM && minRPMThrottle == 0) {
+      float thisAvg = (((1/avgRPMs.mean())*1000000)/(POLES/2))*60;
+      avgRPMs.clear();
+      uint16_t thisLoop = micros() - loopStart;
+      /*Serial.print("Average : "); 
+      Serial.println(thisAvg);
+      Serial.print("Throttle: "); 
+      Serial.println(escMicros);*/
+      if(thisAvg > BRAKEMINRPM && minRPMThrottle == 0) {
         minRPMThrottle = currentMicros;
       }
-      if(avgRPMs.mean() > BRAKEMAXRPM && maxRPMThrottle == 0) {
+      if(thisAvg > BRAKEMAXRPM && maxRPMThrottle == 0) {
         maxRPMThrottle = currentMicros;
       }
     }
@@ -280,10 +293,10 @@ void loop() {
       Serial.print("Throttle(uS),");
       Serial.print("Time(uS),");
       if(MAGSENS) {
-        Serial.print("mPRMs,");
+        Serial.println("mPRMs,");
       }
       if(OPTISENS) {
-        Serial.print("oRPMs,");
+        Serial.println("oRPMs,");
       }
       
       // Initiate test run
@@ -318,28 +331,28 @@ void loop() {
         
         // Print out data
         
+        uint16_t theseRpms;
         Serial.print(thrust);
         Serial.print(",");
         if(MAGSENS) {
           Serial.print(stepCount1);
-          Serial.print(",");
         }
         if(OPTISENS) {
           Serial.print(stepCount2);
-          Serial.print(","); 
         }
+        Serial.print(",");
         Serial.print(escMicros);
         Serial.print(",");
         Serial.print(currentLoopTime);
         Serial.print(",");
         if(MAGSENS) {
-          Serial.print(RPMs1);
-          Serial.print(",");
+          theseRpms = ((((float)1/(float)(RPMs1))*1000000)/(POLES/2))*60;
         }
         if(OPTISENS) {
-          Serial.print(RPMs2);
-          Serial.print(",");
+          theseRpms = ((((float)1/(float)(RPMs2))*1000000)/(POLES/2))*60;
         }
+        Serial.println(theseRpms);
+        
       }
     } else {
       Serial.println("Throttle positions for target RPMs could not be aquired, aborting test!");
@@ -428,29 +441,28 @@ void loop() {
       }
       
       // Print out data
-      
+      uint16_t theseRpms;
       Serial.print(thrust);
       Serial.print(",");
       if(MAGSENS) {
         Serial.print(stepCount1);
-        Serial.print(",");
       }
       if(OPTISENS) {
         Serial.print(stepCount2);
-        Serial.print(","); 
       }
+      Serial.print(",");
       Serial.print(escMicros);
       Serial.print(",");
       Serial.print(currentLoopTime);
       Serial.print(",");
       if(MAGSENS) {
-        Serial.print(RPMs1);
-        Serial.print(",");
+        theseRpms = ((((float)1/(float)(RPMs1))*1000000)/(POLES/2))*60;
       }
       if(OPTISENS) {
-        Serial.print(RPMs2);
-        Serial.print(",");
+        theseRpms = ((((float)1/(float)(RPMs2))*1000000)/(POLES/2))*60;
       }
+      Serial.print(theseRpms);
+      Serial.print(",");
       Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
       Serial.print(",");
       Serial.println(((float)currentValue/4096) * (float)CSCALE); // Calculate Amps from analog sensor
@@ -559,7 +571,7 @@ void updatePWM(unsigned pulseWidth) {
           pulseWidth = 2075;
         
         // Convert 1000-2000us range to 125-250us range and apply to PWM output
-        uint32_t dutyCycle = (pulseWidth *10) - 1;
+        uint32_t dutyCycle = (pulseWidth *10);
         TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
         
 }
