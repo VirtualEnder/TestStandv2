@@ -63,7 +63,7 @@ void idle() {
     
     // Idle for 4 seconds
     startTime=micros();
-    updatePWM(1100);
+    updatePWM(IDLEPWM);
     while(!Serial.available()&& micros()-startTime < 4000000) {
     }
     while(Serial.available()) {

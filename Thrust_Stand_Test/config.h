@@ -14,7 +14,8 @@
 // Test Range
 #define MINTHROTTLE 1030   // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000   // High end of ESC calibrated range
-#define MINCOMMAND 980     // Value sent to ESC when test isn't running.
+#define MINCOMMAND  980    // Value sent to ESC when test isn't running.
+#define IDLEPWM     1100   // PWM sent during the idle routine
 
 
 // Analog Configuation
