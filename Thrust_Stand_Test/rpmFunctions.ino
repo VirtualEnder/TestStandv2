@@ -24,6 +24,9 @@ void countRpms2 () {
   }
 }
 uint32_t calculateRPMs (uint32_t thisTime) {
-  return ((((float)1/(float)(thisTime))*1000000)/(POLES/2))*60;
+  if(thisTime == 0)
+    return 0;
+  else
+    return ((((float)1/(float)(thisTime))*1000000)/(POLES/2))*60;
 }
 

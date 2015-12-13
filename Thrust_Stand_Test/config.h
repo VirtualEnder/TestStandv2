@@ -2,19 +2,19 @@
 // Configuration options
 
 // Rates
-#define UARTBAUD 921600    // UART Baud rate (DO NOT set to less than 115200) 
-#define SENSORRATE 500     // Refresh rate in HZ of load cell and analog read timer.
-#define LOOPDELAY 4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
+#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200) 
+#define SENSORRATE  500     // Refresh rate in HZ of load cell and analog read timer.
+#define LOOPDELAY  4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
 
 // Sensor and Motor configuration
-#define MAGSENS true       // Using Magnetic RPM sensor?
-#define OPTISENS false     // Using Magnetic RPM sensor?
-#define POLES 14           // Number of magnetic poles in test motor.
+#define MAGSENS    true     // Using Magnetic RPM sensor?
+#define OPTISENS  false     // Using Magnetic RPM sensor?
+#define POLES        14     // Number of magnetic poles in test motor.
 
 // Test Range
 #define MINTHROTTLE 1030   // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000   // High end of ESC calibrated range
-#define MINCOMMAND  980    // Value sent to ESC when test isn't running.
+#define MINCOMMAND  1000   // Value sent to ESC when test isn't running.
 #define IDLEPWM     1100   // PWM sent during the idle routine
 
 

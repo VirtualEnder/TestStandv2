@@ -302,12 +302,12 @@ void mainTest() {
         escMicros = MINCOMMAND;
       else if(currentLoopTime<16000000 && !isTared) {
         // Tare scale between passes to increase accuracy.
-        scale.tare();
-        isTared = true;
-      } 
+        //scale.tare();
+        //isTared = true;
+      }
       else if(currentLoopTime<22000000)
         // Iterate through whole throttle range based on time
-        escMicros = (((float)(currentLoopTime-16000000)/6000000.0)* 1000)+1000;   
+        escMicros = (((float)(currentLoopTime-16000000)/6000000.0)*(2000-MINTHROTTLE))+ MINTHROTTLE;   
       else if(currentLoopTime<24000000)
         escMicros = MAXTHROTTLE;
       else if(currentLoopTime<=26000000)
