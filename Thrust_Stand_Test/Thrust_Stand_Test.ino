@@ -65,6 +65,8 @@ void loop() {
   isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;
+  RPMs1 = 0;
+  RPMs2 = 0;
   updatePWM(MINCOMMAND);  // Double check throttle is at 0
   
   if(!isTared) {
@@ -102,7 +104,7 @@ void loop() {
   if(input.indexOf("s") >= 0) {
     mainTest();
   } 
-  delay(1);
+  delay(100);
 }
 
 

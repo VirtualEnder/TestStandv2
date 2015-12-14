@@ -196,11 +196,9 @@ void brakeTest() {
           escMicros = MINCOMMAND;
         else {
           // End test and reset variables
-          isTared = false;
           minRPMThrottle = 0;
           maxRPMThrottle = 0;
-          RPMs1 = 0;
-          RPMs2 = 0;
+          isTared = false;
           isTestRunning = false;
         }
         if(escMicros != currentMicros) {
@@ -273,7 +271,7 @@ void mainTest() {
       Serial.print("oRPMs,");
     }
     Serial.print("Volts,");
-    Serial.print("Amps");
+    Serial.println("Amps");
     
     // Initiate test run
     startTime=micros();
