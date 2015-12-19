@@ -3,7 +3,7 @@
 
 // Rates
 #define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200) 
-#define SENSORRATE  500     // Refresh rate in HZ of load cell and analog read timer.
+#define SENSORRATE 250     // Refresh rate in HZ of load cell and analog read timer.
 #define LOOPDELAY  4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
 
 // Sensor and Motor configuration
@@ -22,7 +22,7 @@
 #define OVERSAMPLING 64    // Analog oversampling multiplier
 #define VSCALE 26          // Scale factor for Voltage divider.
 #define CSCALE 100         // Scale factor for current sensor.
-#define LSCALE -395        // Scale factor for load cell amplifier.
+#define LSCALE -410        // Scale factor for load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.

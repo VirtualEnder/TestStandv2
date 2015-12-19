@@ -41,12 +41,12 @@ void setup() {
     
   // attach Interupt for RPM sensor
   if(MAGSENS) {
-    pinMode(33, OUTPUT);
-    digitalWrite(33,LOW);
-    pinMode(32, OUTPUT);
-    digitalWrite(32,HIGH);
-    pinMode(PUSH1, INPUT_PULLUP);
-    attachInterrupt(PUSH1, countRpms, FALLING);
+    pinMode(38, OUTPUT);
+    digitalWrite(38,LOW);
+    pinMode(37, OUTPUT);
+    digitalWrite(37,HIGH);
+    pinMode(36, INPUT_PULLUP);
+    attachInterrupt(36, countRpms, FALLING);
   }
   if(OPTISENS) {
     pinMode(PUSH2, INPUT_PULLUP);
@@ -61,7 +61,7 @@ void setup() {
 }
 
 void loop() {
-  
+  Serial.println(micros());
   isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;

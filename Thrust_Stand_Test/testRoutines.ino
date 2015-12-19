@@ -321,7 +321,7 @@ void mainTest() {
         currentMicros = escMicros;
       }
       
-      // If no steps have happened in 100ms reset rpms to 0
+      /* If no steps have happened in 100ms reset rpms to 0
       // This means that the minimum RPMs the code is capable of detecting is
       // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
       // at about 2000 rpms.
@@ -330,10 +330,10 @@ void mainTest() {
       }
       if(loopStart-stepTime2 > 100000) {
         RPMs2 = 0;
-      }
+      }*/
       
       // Print out data
-      uint16_t theseRpms;
+      int32_t theseRpms;
       Serial.print(thrust);
       Serial.print(",");
       if(MAGSENS) {
@@ -354,6 +354,8 @@ void mainTest() {
         theseRpms = calculateRPMs(RPMs2);
       }
       Serial.print(theseRpms);
+      Serial.print(",");
+      Serial.print(String(thisFormula));
       Serial.print(",");
       Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
       Serial.print(",");
