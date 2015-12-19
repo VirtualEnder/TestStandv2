@@ -17,17 +17,14 @@ void countRpms2 () {
     stepCount2++;    // Increase Step counter
   }
 }
-int calculateRPMs (int thisTime) {
-  
- if (thisTime > 100 && thisTime < 5000) {
-   int avgTime = avgStepDiff1.rolling(thisTime);
-   int outRPMs = (120000000/(avgTime*POLES));
-   //return avgTime;
-   //return thisTime;
-   if(outRPMs > 1000) {
-     return outRPMs;
-   }
- }
- 
+int calculateRPMs (int thisTime, boolean useAverage = true) {
+   
+  if(USEAVG && useAverage) {
+    thisTime = avgStepDiff1.rolling(thisTime);
+  }
+  int outRPMs = (120000000/(thisTime*POLES));
+  //return avgTime;
+  //return thisTime;
+  return outRPMs;
 }
 

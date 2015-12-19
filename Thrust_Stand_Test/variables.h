@@ -11,7 +11,8 @@ volatile uint64_t stepTime1 = 0;
 volatile uint64_t stepTime2 = 0;
 volatile uint32_t stepDiff1 = 0;
 volatile uint32_t stepDiff2 = 0;
-Average<int> avgStepDiff1(10);
+Average<int> avgStepDiff1(AVGSIZE);
+int theseRpms;
 
 // analog value variablesyour
 uint32_t ulADC0Value[8];

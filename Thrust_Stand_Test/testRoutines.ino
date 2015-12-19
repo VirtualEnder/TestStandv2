@@ -132,7 +132,7 @@ void brakeTest() {
           avgRPMs.push(stepDiff2);
         }
       }
-      float thisAvg = calculateRPMs(avgRPMs.mean());
+      float thisAvg = calculateRPMs(avgRPMs.mean(), false);
       avgRPMs.clear();
       uint16_t thisLoop = micros() - loopStart;
       /*Serial.print("Average : "); 
@@ -206,9 +206,26 @@ void brakeTest() {
           currentMicros = escMicros;
         }
         
-        // Print out data
+        int calcedRpms = 0;
+        if(MAGSENS) {
+          calcedRpms = calculateRPMs(stepDiff1); 
+        }
+        if(OPTISENS) {
+          calcedRpms = calculateRPMs(stepDiff2);
+        }
+        if (calcedRpms > 1000 && calcedRpms < 50000)
+          theseRpms = calcedRpms;
+          
         
-        unsigned long theseRpms;
+        // If no steps have happened in 100ms reset rpms to 0
+        // This means that the minimum RPMs the code is capable of detecting is
+        // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+        // at about 2000 rpms.
+        if(stepTime1 > 100000 || stepTime2 > 100000) {
+         theseRpms = 0;
+        }
+        
+        // Print out data
         Serial.print(thrust);
         Serial.print(",");
         if(MAGSENS) {
@@ -321,19 +338,26 @@ void mainTest() {
         currentMicros = escMicros;
       }
       
-      /* If no steps have happened in 100ms reset rpms to 0
+      int calcedRpms = 0;
+      if(MAGSENS) {
+        calcedRpms = calculateRPMs(stepDiff1); 
+      }
+      if(OPTISENS) {
+        calcedRpms = calculateRPMs(stepDiff2);
+      }
+      if (calcedRpms > 1000 && calcedRpms < 50000)
+        theseRpms = calcedRpms;
+        
+      
+      // If no steps have happened in 100ms reset rpms to 0
       // This means that the minimum RPMs the code is capable of detecting is
       // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
       // at about 2000 rpms.
-      if(loopStart-stepTime1 > 100000) {
-        RPMs1 = 0;
+      if(stepTime1 > 100000 || stepTime2 > 100000) {
+       theseRpms = 0;
       }
-      if(loopStart-stepTime2 > 100000) {
-        RPMs2 = 0;
-      }*/
-      
+        
       // Print out data
-      int theseRpms;
       Serial.print(thrust);
       Serial.print(",");
       if(MAGSENS) {
@@ -347,12 +371,6 @@ void mainTest() {
       Serial.print(",");
       Serial.print(currentLoopTime);
       Serial.print(",");
-      if(MAGSENS) {
-        theseRpms = calculateRPMs(stepDiff1);
-      }
-      if(OPTISENS) {
-        theseRpms = calculateRPMs(stepDiff2);
-      }
       Serial.print(theseRpms);
       Serial.print(",");
       Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor

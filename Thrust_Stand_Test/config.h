@@ -11,6 +11,10 @@
 #define OPTISENS  false     // Using Magnetic RPM sensor?
 #define POLES        14     // Number of magnetic poles in test motor.
 
+//RPM calculation configuration
+#define USEAVG     true     // Use averaging on RPM calculations
+#define AVGSIZE      15     // Sample size of rolling average used in RPM calculations if USEAVG is true.
+
 // Test Range
 #define MINTHROTTLE 1030   // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000   // High end of ESC calibrated range
