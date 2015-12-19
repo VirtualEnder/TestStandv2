@@ -208,7 +208,7 @@ void brakeTest() {
         
         // Print out data
         
-        uint16_t theseRpms;
+        unsigned long theseRpms;
         Serial.print(thrust);
         Serial.print(",");
         if(MAGSENS) {
@@ -222,7 +222,7 @@ void brakeTest() {
         Serial.print(",");
         Serial.print(currentLoopTime);
         Serial.print(",");
-        if(MAGSENS) {
+        if(MAGSENS) { 
           theseRpms = calculateRPMs(stepDiff1);
         }
         if(OPTISENS) {
@@ -333,7 +333,7 @@ void mainTest() {
       }*/
       
       // Print out data
-      int32_t theseRpms;
+      int theseRpms;
       Serial.print(thrust);
       Serial.print(",");
       if(MAGSENS) {

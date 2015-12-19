@@ -27,7 +27,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
 #include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
-//#include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
+#include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
 #include "config.h"
 #include "variables.h"
@@ -58,8 +58,8 @@ void setup() {
   
   adcTimer(SENSORRATE);     // Start timer for load cell and analog reads
   initPWMOut();             // Start PWM output
-  initRPMCount1();          // Start RPM counter timers
-  initRPMCount2();
+  initRPMCount();           // Start RPM counter timers
+ 
 }
 
 void loop() {

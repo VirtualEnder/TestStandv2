@@ -3,7 +3,7 @@
 
 // Rates
 #define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200) 
-#define SENSORRATE 250     // Refresh rate in HZ of load cell and analog read timer.
+#define SENSORRATE  250     // Refresh rate in HZ of load cell and analog read timer.
 #define LOOPDELAY  4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
 
 // Sensor and Motor configuration

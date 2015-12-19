@@ -9,15 +9,15 @@ volatile uint32_t stepCount1 = 0;
 volatile uint32_t stepCount2 = 0;
 volatile uint64_t stepTime1 = 0;
 volatile uint64_t stepTime2 = 0;
-volatile uint64_t stepDiff1 = 0;
-volatile uint64_t stepDiff2 = 0;
-char thisFormula [25];
+volatile uint32_t stepDiff1 = 0;
+volatile uint32_t stepDiff2 = 0;
+Average<int> avgStepDiff1(10);
 
 // analog value variablesyour
 uint32_t ulADC0Value[8];
-volatile uint16_t voltageValue = 0;
-volatile uint16_t currentValue = 0;
-volatile uint16_t thrust = 0;
+volatile int voltageValue = 0;
+volatile int currentValue = 0;
+volatile int thrust = 0;
 
 // Misc Variables
 char character;

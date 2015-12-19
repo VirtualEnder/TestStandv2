@@ -77,36 +77,29 @@ void updatePWM(unsigned pulseWidth) {
         
 }
 
-void initRPMCount1() {
-  TimerConfigure(TIMER0_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_B_PERIODIC); 
-  // set Period to 1 uS
+void initRPMCount() {
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);  
+  TimerConfigure(TIMER2_BASE, TIMER_CFG_PERIODIC); 
   uint64_t ulPeriod = (SysCtlClockGet () / 1000000);
-  TimerLoadSet(TIMER0_BASE, TIMER_B, ulPeriod -1); 
-  IntEnable(INT_TIMER0B); 
-  TimerIntEnable(TIMER0_BASE, TIMER_TIMB_TIMEOUT); 
-  TimerIntRegister(TIMER0_BASE, TIMER_B, rpmTimer1); 
-  TimerEnable(TIMER0_BASE, TIMER_B);
+  TimerLoadSet(TIMER2_BASE, TIMER_A, ulPeriod -1); 
+  IntEnable(INT_TIMER2A); 
+  TimerIntEnable(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 
+  TimerIntRegister(TIMER2_BASE, TIMER_A, rpmTimer); 
+  TimerEnable(TIMER2_BASE, TIMER_A); 
 }
 
-void rpmTimer1 () {
+void rpmTimer () {
+  TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
-    stepTime1++;
+    
+    if(MAGSENS) {
+      stepTime1++;
+    }
+    
+    if(OPTISENS) {
+      stepTime2++;
+    }
+    
   }
 }
 
-void initRPMCount2() {
-  TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_B_PERIODIC); 
-  // set Period to 1 uS
-  uint64_t ulPeriod = (SysCtlClockGet () / 1000000);
-  TimerLoadSet(TIMER1_BASE, TIMER_B, ulPeriod -1); 
-  IntEnable(INT_TIMER1B); 
-  TimerIntEnable(TIMER1_BASE, TIMER_TIMB_TIMEOUT); 
-  TimerIntRegister(TIMER1_BASE, TIMER_B, rpmTimer2); 
-  TimerEnable(TIMER1_BASE, TIMER_B);
-}
-
-void rpmTimer2 () {
-  if(isTestRunning) {
-    stepTime1++;
-  }
-}

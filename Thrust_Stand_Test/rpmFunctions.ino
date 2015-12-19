@@ -17,14 +17,17 @@ void countRpms2 () {
     stepCount2++;    // Increase Step counter
   }
 }
-uint32_t calculateRPMs (int64_t thisTime) {
+int calculateRPMs (int thisTime) {
   
-  return thisTime;
-  //if (thisTime >= 3000)
-    // If delay greater than limit, set RPMs to 0 rather than save last RPM infintely
-   // return 0;
- // else if (thisTime > 0)
-   // return ((((float)1/(float)(thisTime))*1000000)/(POLES/2))*60;
-
+ if (thisTime > 100 && thisTime < 5000) {
+   int avgTime = avgStepDiff1.rolling(thisTime);
+   int outRPMs = (120000000/(avgTime*POLES));
+   //return avgTime;
+   //return thisTime;
+   if(outRPMs > 1000) {
+     return outRPMs;
+   }
+ }
+ 
 }
 
