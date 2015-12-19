@@ -4,27 +4,16 @@
 
 void countRpms () {
   if(isTestRunning) {
-    uint32_t nowMicros = micros();
-    uint32_t lastStep = stepTime;
-    stepTime = nowMicros;
-    // Calculate RPMs from step time.
-    sprintf(thisFormula, "%lu - %lu", nowMicros, lastStep);
-    int64_t thisDiff = nowMicros - lastStep;
-    RPMs1 = thisDiff;
+    stepDiff1 = stepTime1;
+    stepTime1 = 0;   // Reset step timer variable
     stepCount1++;    // Increase Step counter
   }
 }
 
 void countRpms2 () {
- if(isTestRunning) {
-    uint64_t stepMicros2 = micros();
-    uint64_t lastStep2 = stepTime2;
-    stepTime2 = stepMicros2;
-    // Calculate RPMs from step time.
-    int64_t thisDiff = stepMicros2 - lastStep2;
-    if (thisDiff > 200 && thisDiff < 5000) {
-      RPMs2 = thisDiff;
-    }
+  if(isTestRunning) {
+    stepDiff2 = stepTime2;
+    stepTime2 = 0;   // Reset step timer variable
     stepCount2++;    // Increase Step counter
   }
 }

@@ -27,7 +27,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
 #include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
-#include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
+//#include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
 #include "config.h"
 #include "variables.h"
@@ -54,10 +54,12 @@ void setup() {
   }
   
   scale.set_scale(LSCALE);  // Eventually set this via EEPROM
-  scale.tare();	// Reset the scale to 0
+  scale.tare();	            // Reset the scale to 0
   
   adcTimer(SENSORRATE);     // Start timer for load cell and analog reads
-  initPWMOut();               // Start PWM output
+  initPWMOut();             // Start PWM output
+  initRPMCount1();          // Start RPM counter timers
+  initRPMCount2();
 }
 
 void loop() {
@@ -65,8 +67,8 @@ void loop() {
   isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;
-  RPMs1 = 0;
-  RPMs2 = 0;
+  stepDiff1 = 0;
+  stepDiff2 = 0;
   updatePWM(MINCOMMAND);  // Double check throttle is at 0
   
   if(!isTared) {

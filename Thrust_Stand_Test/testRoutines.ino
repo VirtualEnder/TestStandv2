@@ -126,10 +126,10 @@ void brakeTest() {
       for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
         delayMicroseconds(200);
         if(MAGSENS) {
-          avgRPMs.push(RPMs1);
+          avgRPMs.push(stepDiff1);
         } 
         if(OPTISENS) {
-          avgRPMs.push(RPMs2);
+          avgRPMs.push(stepDiff2);
         }
       }
       float thisAvg = calculateRPMs(avgRPMs.mean());
@@ -223,10 +223,10 @@ void brakeTest() {
         Serial.print(currentLoopTime);
         Serial.print(",");
         if(MAGSENS) {
-          theseRpms = calculateRPMs(RPMs1);
+          theseRpms = calculateRPMs(stepDiff1);
         }
         if(OPTISENS) {
-          theseRpms = calculateRPMs(RPMs2);
+          theseRpms = calculateRPMs(stepDiff2);
         }
         Serial.println(theseRpms);
         
@@ -348,14 +348,12 @@ void mainTest() {
       Serial.print(currentLoopTime);
       Serial.print(",");
       if(MAGSENS) {
-        theseRpms = calculateRPMs(RPMs1);
+        theseRpms = calculateRPMs(stepDiff1);
       }
       if(OPTISENS) {
-        theseRpms = calculateRPMs(RPMs2);
+        theseRpms = calculateRPMs(stepDiff2);
       }
       Serial.print(theseRpms);
-      Serial.print(",");
-      Serial.print(String(thisFormula));
       Serial.print(",");
       Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
       Serial.print(",");

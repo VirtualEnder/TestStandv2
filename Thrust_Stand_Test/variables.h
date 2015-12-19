@@ -7,10 +7,10 @@ HX711 scale(9, 8);
 // RPM input variables
 volatile uint32_t stepCount1 = 0;
 volatile uint32_t stepCount2 = 0;
-volatile uint64_t stepTime = 0;
+volatile uint64_t stepTime1 = 0;
 volatile uint64_t stepTime2 = 0;
-volatile int64_t RPMs1 = 0;
-volatile int64_t RPMs2 = 0;
+volatile uint64_t stepDiff1 = 0;
+volatile uint64_t stepDiff2 = 0;
 char thisFormula [25];
 
 // analog value variablesyour
