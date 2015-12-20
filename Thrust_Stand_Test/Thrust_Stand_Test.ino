@@ -26,7 +26,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
 #include "driverlib/timer.h" 
-#include "HX711.h"           // Requires HX711 Library from: https://github.com/bogde/HX711
+#include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
 #include "config.h"

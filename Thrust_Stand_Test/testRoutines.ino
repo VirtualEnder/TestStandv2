@@ -205,17 +205,14 @@ void brakeTest() {
           updatePWM(escMicros);
           currentMicros = escMicros;
         }
-        
-        int calcedRpms = 0;
-        if(MAGSENS) {
-          calcedRpms = calculateRPMs(stepDiff1); 
+      
+        // Grab RPM calculations from last step times.
+        if (MAGSENS) {
+          theseRpms = calculateRPMs(stepDiff1); 
         }
-        if(OPTISENS) {
-          calcedRpms = calculateRPMs(stepDiff2);
+        if (OPTISENS) {
+          theseRpms = calculateRPMs(stepDiff2);
         }
-        if (calcedRpms > 1000 && calcedRpms < 50000)
-          theseRpms = calcedRpms;
-          
         
         // If no steps have happened in 100ms reset rpms to 0
         // This means that the minimum RPMs the code is capable of detecting is
@@ -338,16 +335,13 @@ void mainTest() {
         currentMicros = escMicros;
       }
       
-      int calcedRpms = 0;
-      if(MAGSENS) {
-        calcedRpms = calculateRPMs(stepDiff1); 
+      // Grab RPM calculations from last step times.
+      if (MAGSENS) {
+        theseRpms = calculateRPMs(stepDiff1); 
       }
-      if(OPTISENS) {
-        calcedRpms = calculateRPMs(stepDiff2);
+      if (OPTISENS) {
+        theseRpms = calculateRPMs(stepDiff2);
       }
-      if (calcedRpms > 1000 && calcedRpms < 50000)
-        theseRpms = calcedRpms;
-        
       
       // If no steps have happened in 100ms reset rpms to 0
       // This means that the minimum RPMs the code is capable of detecting is

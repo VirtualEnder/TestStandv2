@@ -14,7 +14,7 @@ volatile uint32_t stepDiff2 = 0;
 Average<int> avgStepDiff1(AVGSIZE);
 int theseRpms;
 
-// analog value variablesyour
+// analog value variables
 uint32_t ulADC0Value[8];
 volatile int voltageValue = 0;
 volatile int currentValue = 0;

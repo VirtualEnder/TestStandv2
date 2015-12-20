@@ -18,13 +18,15 @@ void countRpms2 () {
   }
 }
 int calculateRPMs (int thisTime, boolean useAverage = true) {
-   
-  if(USEAVG && useAverage) {
-    thisTime = avgStepDiff1.rolling(thisTime);
+  static int last_ret = 0;
+  
+  // Filter bad values outside the range of ~52000 - 600 RPMs
+  if (thisTime > 165 && thisTime < 100000) {  
+    if(USEAVG && useAverage) {
+      thisTime = avgStepDiff1.rolling(thisTime);
+    }
+    last_ret = (120000000/(thisTime*POLES));
   }
-  int outRPMs = (120000000/(thisTime*POLES));
-  //return avgTime;
-  //return thisTime;
-  return outRPMs;
+  return last_ret;
 }
 

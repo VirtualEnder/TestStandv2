@@ -65,15 +65,15 @@ void initPWMOut () {
 }
 
 void updatePWM(unsigned pulseWidth) {
-        //Prevent escMicros from overflowing the timer
-        if (pulseWidth > MAXTHROTTLE) 
-          pulseWidth = MAXTHROTTLE;
-        if (pulseWidth < MINCOMMAND)
-          pulseWidth = MINCOMMAND;
-          
-        // Convert 1000-2000us range to 125-250us range and apply to PWM output
-        uint32_t dutyCycle = (pulseWidth *10);
-        TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
+  //Prevent escMicros from overflowing the timer
+  if (pulseWidth > MAXTHROTTLE) 
+    pulseWidth = MAXTHROTTLE;
+  if (pulseWidth < MINCOMMAND)
+    pulseWidth = MINCOMMAND;
+    
+  // Convert 1000-2000us range to 125-250us range and apply to PWM output
+  uint32_t dutyCycle = (pulseWidth *10);
+  TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
         
 }
 
@@ -88,7 +88,7 @@ void initRPMCount() {
   TimerEnable(TIMER2_BASE, TIMER_A); 
 }
 
-void rpmTimer () {
+void rpmTimer() {
   TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
     
