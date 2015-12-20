@@ -41,12 +41,12 @@ void setup() {
     
   // attach Interupt for RPM sensor
   if(MAGSENS) {
-    pinMode(38, OUTPUT);
-    digitalWrite(38,LOW);
-    pinMode(37, OUTPUT);
-    digitalWrite(37,HIGH);
-    pinMode(36, INPUT_PULLUP);
-    attachInterrupt(36, countRpms, FALLING);
+    pinMode(33, OUTPUT);
+    digitalWrite(33,LOW);
+    pinMode(32, OUTPUT);
+    digitalWrite(32,HIGH);
+    pinMode(31, INPUT_PULLUP);
+    attachInterrupt(31, countRpms, FALLING);
   }
   if(OPTISENS) {
     pinMode(PUSH2, INPUT_PULLUP);
