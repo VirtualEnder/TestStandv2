@@ -13,7 +13,7 @@
 
 //RPM calculation configuration
 #define USEAVG     true     // Use averaging on RPM calculations
-#define AVGSIZE      15     // Sample size of rolling average used in RPM calculations if USEAVG is true.
+#define AVGSIZE      10     // Sample size of rolling average used in RPM calculations if USEAVG is true.
 
 // Test Range
 #define MINTHROTTLE 1030   // Low end of ESC calibrated range
@@ -26,7 +26,7 @@
 #define OVERSAMPLING 64    // Analog oversampling multiplier
 #define VSCALE 26          // Scale factor for Voltage divider.
 #define CSCALE 100         // Scale factor for current sensor.
-#define LSCALE -410        // Scale factor for load cell amplifier.
+#define LSCALE -380        // Scale factor for load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.

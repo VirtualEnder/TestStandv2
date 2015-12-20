@@ -220,6 +220,7 @@ void brakeTest() {
         // at about 2000 rpms.
         if(stepTime1 > 100000 || stepTime2 > 100000) {
          theseRpms = 0;
+         avgStepDiff1.push(0);
         }
         
         // Print out data
@@ -349,6 +350,7 @@ void mainTest() {
       // at about 2000 rpms.
       if(stepTime1 > 100000 || stepTime2 > 100000) {
        theseRpms = 0;
+       avgStepDiff1.push(0);
       }
         
       // Print out data
