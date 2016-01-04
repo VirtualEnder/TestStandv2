@@ -16,6 +16,6 @@ typedef struct ramp {
 void ramp_init(ramp *r);
 int ramp_add_range(ramp *r, int start_pwm, int end_pwm, int ramp_time_ms);
 int ramp_add_static(ramp *r, int pwm, int hold_time_ms);
-int ramp_get_pwm(ramp *r, uint64_t curr_time, uint64_t start_time);
+int ramp_get_pwm(ramp *r, uint64_t curr_time);
 
 #endif

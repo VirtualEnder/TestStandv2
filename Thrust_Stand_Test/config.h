@@ -2,7 +2,7 @@
 // Configuration options
 
 // Rates
-#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200) 
+#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200)
 #define SENSORRATE  250     // Refresh rate in HZ of load cell and analog read timer.
 #define LOOPDELAY  4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
 
@@ -32,3 +32,5 @@
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
 #define BRAKEMINRPM 8000   // Maximum RPM limit used in braking test.
 #define BRAKERPMSAMPLE 250 // Sample size of RPM averaging for target RPM detection during brake test.
+
+#define STEP_COUNT 20 //number of steps to average for RPM calculation

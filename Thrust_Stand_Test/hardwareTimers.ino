@@ -91,15 +91,9 @@ void initRPMCount() {
 void rpmTimer() {
   TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
-    
-    if(MAGSENS) {
-      stepTime1++;
-    }
-    
-    if(OPTISENS) {
-      stepTime2++;
-    }
-    
+    //allow us to potentially use both sensors
+    stepTime1++;
+    stepTime2++;
   }
 }
 
