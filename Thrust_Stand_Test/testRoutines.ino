@@ -85,8 +85,7 @@ void idle() {
  */
 
 void brakeTest() {
-  int pwm, prev_pwm;
-  ramp r;
+
   delay(20);
   Serial.println("Begining automated braking test, press any key to exit");
   delay(2000);
@@ -104,15 +103,13 @@ void brakeTest() {
   delay(2000);
 
   startTime=micros();
-  //setup our ramp
-  ramp_init(&r);
-  ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 6000); //full range over 6s
-  ramp_add_static(&r, MINCOMMAND, 1000);
-
   while(!Serial.available() && isTestRunning) {
 
     loopStart = micros();
     uint32_t currentLoopTime = loopStart-startTime;
+    if (currentLoopTime <= 0) {
+      currentLoopTime = 1;
+    }
     if(currentLoopTime<6000000)
       // Iterate through whole throttle range based on time
       escMicros = (((float)(currentLoopTime)/6000000.0)*(2000-MINTHROTTLE))+ MINTHROTTLE;
@@ -274,9 +271,9 @@ void rateTest() {
   Serial.println("Begining automated test, press any key to exit");
   delay(2000);
 
-  char *headers[8] = { 
+  char *headers[8] = {
     "thrust", "steps", "throttle",
-    "time", "rpms", "volts", "amps", NULL   };
+    "time", "rpms", "volts", "amps", NULL     };
   //print headers
   for (int i = 0;headers[i] != NULL; i++) {
     Serial.print(headers[i]);
@@ -346,7 +343,7 @@ void rateTest() {
     // Grab RPM calculations from average of last 20 step times
     if (MAGSENS) {
       theseRpms = averageRPMs();
-    } 
+    }
     else
       if (OPTISENS) {
         theseRpms = calculateRPMs(stepDiff2);
@@ -509,7 +506,7 @@ void mainTest() {
         thisDelay = (997 - loopTime);
         break;
       }
-    } 
+    }
     else {
       thisDelay = LOOPDELAY - loopTime;
     }
@@ -522,4 +519,5 @@ void mainTest() {
     delay(1);
   }
 }
+
 
