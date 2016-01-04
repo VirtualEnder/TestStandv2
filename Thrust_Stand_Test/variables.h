@@ -2,7 +2,7 @@
 // Scale Pins
 // HX711.DOUT	- pin #9
 // HX711.PD_SCK	- pin #8
-HX711 scale(9, 8);	
+HX711 scale(9, 8);
 
 // RPM input variables
 volatile uint32_t stepCount1 = 0;
@@ -34,3 +34,8 @@ union f_bytes
   byte b[4];
   float fval;
 }u;
+
+//for average step times
+//need more testing to determine optimal number of steps to average
+volatile uint32_t step_times[STEP_COUNT];
+volatile uint32_t step_idx;
