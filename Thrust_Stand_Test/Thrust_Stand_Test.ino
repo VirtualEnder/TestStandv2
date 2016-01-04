@@ -31,6 +31,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include <EEPROM.h>
 #include "config.h"
 #include "variables.h"
+#include "ramp.h"
 
 void setup() {
   
