@@ -38,4 +38,4 @@ union f_bytes
 //for average step times
 //need more testing to determine optimal number of steps to average
 volatile uint32_t step_times[STEP_COUNT];
-volatile uint32_t step_idx;
+volatile uint32_t step_idx = 0;
