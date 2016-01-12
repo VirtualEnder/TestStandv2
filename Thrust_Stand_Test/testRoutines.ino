@@ -14,6 +14,20 @@ void tareScale() {
 }
 
 
+/*
+################################
+#       Voltage Routine        #
+################################
+*/
+
+void returnVoltage() {
+    isTestRunning = true;
+    delay(20);
+    input="";
+    Serial.print("Current Battery Voltage: ");
+    Serial.println(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    isTestRunning = false;
+}
 
 /*
 ################################

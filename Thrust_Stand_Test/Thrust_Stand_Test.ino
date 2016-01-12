@@ -64,7 +64,8 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(micros());
+  
+  
   isTestRunning = false;  // Stop reads from load cell and reset step counters
   stepCount1 = 0;
   stepCount2 = 0;
@@ -78,7 +79,7 @@ void loop() {
   }
 
   // Prompt for input and read it
-  Serial.println("Type t(Tare), c(Calibrate), b(Brake Test), r(Rate Test), s(Start), or i(Idle)");
+  Serial.println("Type t(Tare), v(Battery Voltage), c(Calibrate), b(Brake Test), r(Rate Test), s(Start), or i(Idle)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -109,6 +110,9 @@ void loop() {
   } else
   if (input.indexOf("r") >= 0) {
     rateTest();
+  }
+  if(input.indexOf("v") >= 0) {
+    returnVoltage();
   }
   delay(100);
 }

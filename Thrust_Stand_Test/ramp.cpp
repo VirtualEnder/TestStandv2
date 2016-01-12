@@ -1,4 +1,4 @@
-#include "Arduino.h"
+#include "Energia.h"
 #include "ramp.h"
 
 #define min(x,y) (x < y ? x : y)
