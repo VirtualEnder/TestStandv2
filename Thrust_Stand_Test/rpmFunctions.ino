@@ -7,7 +7,7 @@ void countRpms () {
     stepDiff1 = stepTime1;
     //save the value in a rotating array for averaging
     //pre-divide by STEP_COUNT to simplify averaging code
-    //step_times[step_idx++ % STEP_COUNT] = stepDiff1 / STEP_COUNT;
+    step_times[step_idx++ % STEP_COUNT] = stepDiff1 / STEP_COUNT;
 
     stepTime1 = 0;   // Reset step timer variable
     stepCount1++;    // Increase Step counter
