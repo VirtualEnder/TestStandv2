@@ -34,11 +34,8 @@ union f_bytes
   byte b[4];
   float fval;
 }u;
-<<<<<<< HEAD
-=======
 
 //for average step times
 //need more testing to determine optimal number of steps to average
-volatile uint32_t step_times[STEP_COUNT];
-volatile uint32_t step_idx = 0;
->>>>>>> origin/master
+//volatile uint32_t step_times[STEP_COUNT];
+//volatile uint32_t step_idx = 0;

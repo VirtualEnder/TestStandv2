@@ -5,13 +5,10 @@
 void countRpms () {
   if(isTestRunning) {
     stepDiff1 = stepTime1;
-<<<<<<< HEAD
-=======
     //save the value in a rotating array for averaging
     //pre-divide by STEP_COUNT to simplify averaging code
-    step_times[step_idx++ % STEP_COUNT] = stepDiff1 / STEP_COUNT;
+    //step_times[step_idx++ % STEP_COUNT] = stepDiff1 / STEP_COUNT;
 
->>>>>>> origin/master
     stepTime1 = 0;   // Reset step timer variable
     stepCount1++;    // Increase Step counter
   }

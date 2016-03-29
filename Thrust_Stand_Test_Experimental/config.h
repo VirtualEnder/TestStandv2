@@ -1,5 +1,6 @@
 
 // Configuration options
+#define PART_TM4C123GH6PM  //Set board type to TivaC instead of Stellaris
 
 // Rates
 #define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200)

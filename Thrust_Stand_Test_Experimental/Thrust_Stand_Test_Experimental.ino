@@ -13,23 +13,25 @@ Optical RPMs                 Pin 17 or PF_0 or PUSH2
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
 */
-
-#include "Energia.h"
-#include "inc/hw_memmap.h"
-#include "inc/hw_types.h"
-#include "inc/hw_ints.h"
+#include "config.h"
+#include "Energia.h"  
+#include "inc/hw_memmap.h" 
+#include "inc/hw_types.h" 
+#include "inc/hw_ints.h" 
 #include "inc/hw_timer.h"
-#include "driverlib/Debug.h"
-#include "driverlib/interrupt.h"
-#include "driverlib/sysctl.h"
+#include "driverlib/fpu.h"
+#include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
+#include "driverlib/Debug.h" 
+#include "driverlib/interrupt.h" 
+#include "driverlib/sysctl.h" 
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
 #include "driverlib/timer.h"
+#include "driverlib/pwm.h" 
 #include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
-#include "config.h"
 #include "variables.h"
 #include "ramp.h"
 

@@ -48,19 +48,18 @@ void Timer1IntHandler() {
 }
 
 void initPWMOut () { 
-    
-    // Configure PB6 as T0CCP0
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    GPIOPinConfigure(GPIO_PB6_T0CCP0);
-    GPIOPinTypeTimer(GPIO_PORTB_BASE, GPIO_PIN_6);
-
-    // Configure timer
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-    TimerConfigure(TIMER0_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PWM); 
-    TimerControlLevel(TIMER0_BASE, TIMER_A, 1);                            // Set timer to PWM mode
-    TimerLoadSet(TIMER0_BASE, TIMER_A, 20800 - 1);                         // Set PWM period 260us
-    updatePWM(MINCOMMAND);                                                 // Set PWM Timer match to MINTHROTTLE
-    TimerEnable(TIMER0_BASE, TIMER_A);
+      // Use PWM module
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);       //Enable control of PWM module 0
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);      //Enable control of GPIO B
+  
+      GPIOPinConfigure(GPIO_PB6_M0PWM0);                // Map PB6 to PWM0 G0, OP 0
+      GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_6);      //Configure PB6 as PWM
+ 
+      PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
+      PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, 80000 - 1);    //Set period of PWM0 G0
+      PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, MINCOMMAND*10);    //Set duty cycle of PWM0 G0
+      PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT | PWM_OUT_1_BIT , true);    //Enable OP 0,1 on PWM0 G0
+      PWMGenEnable(PWM0_BASE, PWM_GEN_0);    //Enable PWM0, G0*/
     
 }
 
@@ -73,7 +72,7 @@ void updatePWM(unsigned pulseWidth) {
     
   // Convert 1000-2000us range to 125-250us range and apply to PWM output
   uint32_t dutyCycle = (pulseWidth *10);
-  TimerMatchSet(TIMER0_BASE, TIMER_A, dutyCycle ); 
+  PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, dutyCycle);    //Set duty cycle of PWM0 G0
         
 }
 
@@ -91,9 +90,15 @@ void initRPMCount() {
 void rpmTimer() {
   TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
-    //allow us to potentially use both sensors
-    stepTime1++;
-    stepTime2++;
+    
+    if(MAGSENS) {
+      stepTime1++;
+    }
+    
+    if(OPTISENS) {
+      stepTime2++;
+    }
+    
   }
 }
 
