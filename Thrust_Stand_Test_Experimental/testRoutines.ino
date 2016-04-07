@@ -274,7 +274,7 @@ void brakeTest() {
     }
   } 
   else {
-    Serial.println("Throttle positions for target RPMs could not be aquired, aborting test!");
+    Serial.println("Throttle positions for target RPMs could not be acquired, aborting test!");
   }
   while(Serial.available()) {
     character = Serial.read();
