@@ -13,6 +13,21 @@ void tareScale() {
     scale.tare();
 }
 
+/*
+################################
+#         Scale Value          #
+################################
+*/
+
+void returnScale() {
+    isTestRunning = true;
+    delay(20);
+    input="";
+    Serial.print("Current Load Value: ");
+    Serial.println(thrust);
+    isTestRunning = false;
+}
+
 
 /*
 ################################
@@ -177,17 +192,17 @@ void brakeTest() {
       delay(2000);
       
       // Print CSV header output
+      Serial.print("Time(uS),");
+      Serial.print("Throttle(uS),");
       Serial.print("Thrust(g),");
       if(MAGSENS) {
-        Serial.print("mSteps,");
+        Serial.print("eSteps,");
       }
       if(OPTISENS) {
         Serial.print("oSteps,");
       }
-      Serial.print("Throttle(uS),");
-      Serial.print("Time(uS),");
       if(MAGSENS) {
-        Serial.println("mPRMs,");
+        Serial.println("ePRMs,");
       }
       if(OPTISENS) {
         Serial.println("oRPMs,");
@@ -289,13 +304,13 @@ void mainTest() {
     Serial.print("Throttle(uS),");
     Serial.print("Thrust(g),");
     if(MAGSENS) {
-      Serial.print("mSteps,");
+      Serial.print("eSteps,");
     }
     if(OPTISENS) {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.print("mPRMs,");
+      Serial.print("ePRMs,");
     }
     if(OPTISENS) {
       Serial.print("oRPMs,");
@@ -443,13 +458,13 @@ void kvTest() {
     Serial.print("Throttle(uS),");
     Serial.print("Thrust(g),");
     if(MAGSENS) {
-      Serial.print("mSteps,");
+      Serial.print("eSteps,");
     }
     if(OPTISENS) {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.print("mPRMs,");
+      Serial.print("ePRMs,");
     }
     if(OPTISENS) {
       Serial.print("oRPMs,");

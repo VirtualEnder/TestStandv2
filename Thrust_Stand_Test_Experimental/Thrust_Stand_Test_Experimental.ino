@@ -81,7 +81,8 @@ void loop() {
   }
 
   // Prompt for input and read it
-  Serial.println("Type t(Tare), v(Battery Voltage), c(Calibrate), b(Brake Test), r(Rate Test), s(Start), or i(Idle)");
+  Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate),");
+  Serial.println("      b(Brake Test), r(Rate Test), k(KV Test), s(Start), or i(Idle)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -110,11 +111,17 @@ void loop() {
   if(input.indexOf("s") >= 0) {
     mainTest();
   } else
-  if (input.indexOf("r") >= 0) {
+  if(input.indexOf("r") >= 0) {
     rateTest();
   }
   if(input.indexOf("v") >= 0) {
     returnVoltage();
+  }
+  if(input.indexOf("w") >= 0) {
+    returnScale();
+  }
+  if(input.indexOf("k") >= 0) {
+    kvTest();
   }
   delay(100);
 }

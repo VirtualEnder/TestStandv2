@@ -16,6 +16,22 @@ void tareScale() {
 
 /*
 ################################
+#         Scale Value          #
+################################
+*/
+
+void returnScale() {
+    isTestRunning = true;
+    delay(20);
+    input="";
+    Serial.print("Current Load Value: ");
+    Serial.println(thrust);
+    isTestRunning = false;
+}
+
+
+/*
+################################
 #       Voltage Routine        #
 ################################
 */
@@ -85,10 +101,6 @@ void idle() {
     delay(1);
   }
   isTared = false;
-  while(Serial.available()) {
-    character = Serial.read();
-    delay(1);
-  }
 }
 
 
@@ -176,17 +188,17 @@ void brakeTest() {
     delay(2000);
 
     // Print CSV header output
+    Serial.print("Time(uS),");
+    Serial.print("Throttle(uS),");
     Serial.print("Thrust(g),");
     if(MAGSENS) {
-      Serial.print("mSteps,");
+      Serial.print("eSteps,");
     }
     if(OPTISENS) {
       Serial.print("oSteps,");
     }
-    Serial.print("Throttle(uS),");
-    Serial.print("Time(uS),");
     if(MAGSENS) {
-      Serial.println("mPRMs,");
+      Serial.println("ePRMs,");
     }
     if(OPTISENS) {
       Serial.println("oRPMs,");
@@ -238,6 +250,10 @@ void brakeTest() {
       }
 
       // Print out data
+      Serial.print(currentLoopTime);
+      Serial.print(",");
+      Serial.print(escMicros);
+      Serial.print(",");
       Serial.print(thrust);
       Serial.print(",");
       if(MAGSENS) {
@@ -246,10 +262,6 @@ void brakeTest() {
       if(OPTISENS) {
         Serial.print(stepCount2);
       }
-      Serial.print(",");
-      Serial.print(escMicros);
-      Serial.print(",");
-      Serial.print(currentLoopTime);
       Serial.print(",");
       if(MAGSENS) {
         theseRpms = calculateRPMs(stepDiff1);
@@ -403,17 +415,17 @@ void mainTest() {
   delay(2000);
 
   // Print CSV header output
+  Serial.print("Time(uS),");
+  Serial.print("Throttle(uS),");
   Serial.print("Thrust(g),");
   if(MAGSENS) {
-    Serial.print("mSteps,");
+    Serial.print("eSteps,");
   }
   if(OPTISENS) {
     Serial.print("oSteps,");
   }
-  Serial.print("Throttle(uS),");
-  Serial.print("Time(uS),");
   if(MAGSENS) {
-    Serial.print("mPRMs,");
+    Serial.print("ePRMs,");
   }
   if(OPTISENS) {
     Serial.print("oRPMs,");
@@ -477,6 +489,10 @@ void mainTest() {
     }
 
     // Print out data
+    Serial.print(loopStart-startTime);
+    Serial.print(",");
+    Serial.print(pwm);
+    Serial.print(",");
     Serial.print(thrust);
     Serial.print(",");
     if(MAGSENS) {
@@ -485,10 +501,6 @@ void mainTest() {
     if(OPTISENS) {
       Serial.print(stepCount2);
     }
-    Serial.print(",");
-    Serial.print(pwm);
-    Serial.print(",");
-    Serial.print(loopStart-startTime);
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
@@ -535,3 +547,139 @@ void mainTest() {
 }
 
 
+/*
+################################
+#       KV test Routine        #
+################################
+*/
+
+void kvTest() {
+   input="";
+
+  delay(20);
+  Serial.println("Begining automated test, press any key to exit");
+  delay(2000);
+
+  // Print CSV header output
+  Serial.print("Time(uS),");
+  Serial.print("Throttle(uS),");
+  Serial.print("Thrust(g),");
+  if(MAGSENS) {
+    Serial.print("eSteps,");
+  }
+  if(OPTISENS) {
+    Serial.print("oSteps,");
+  }
+  if(MAGSENS) {
+    Serial.print("ePRMs,");
+  }
+  if(OPTISENS) {
+    Serial.print("oRPMs,");
+  }
+  Serial.print("Volts,");
+  Serial.println("Amps");
+
+  // Initiate test run
+  startTime=micros();
+  isTestRunning = true;
+  isTared = false;
+  int pwm, prev_pwm;
+  ramp r;
+
+  //setup our ramp
+  ramp_init(&r);
+
+  //six second ramp up
+  ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 6000);
+  ramp_add_static(&r, MAXTHROTTLE, 2000);
+  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, MINCOMMAND, 2000);
+
+  prev_pwm = 0;
+  while(!Serial.available() && isTestRunning) {
+    loopStart = micros();
+    pwm = ramp_get_pwm(&r, loopStart - startTime);
+    if (pwm == -1) {
+      isTestRunning = false;
+      isTared = false;
+      break;
+    }
+    if(pwm != prev_pwm) {
+      updatePWM(pwm);
+      prev_pwm = pwm;
+    }
+
+    // Grab RPM calculations from last step times.
+    if (MAGSENS) {
+      theseRpms = calculateRPMs(stepDiff1);
+    }
+    if (OPTISENS) {
+      theseRpms = calculateRPMs(stepDiff2);
+    }
+
+    // If no steps have happened in 100ms reset rpms to 0
+    // This means that the minimum RPMs the code is capable of detecting is
+    // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+    // at about 2000 rpms.
+    if(stepTime1 > 100000 || stepTime2 > 100000) {
+      theseRpms = 0;
+      avgStepDiff1.push(0);
+    }
+
+    // Print out data
+    Serial.print(loopStart-startTime);
+    Serial.print(",");
+    Serial.print(pwm);
+    Serial.print(",");
+    Serial.print(thrust);
+    Serial.print(",");
+    if(MAGSENS) {
+      Serial.print(stepCount1);
+    }
+    if(OPTISENS) {
+      Serial.print(stepCount2);
+    }
+    Serial.print(",");
+    Serial.print(theseRpms);
+    Serial.print(",");
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.print(",");
+    Serial.println(((float)currentValue/4096) * (float)CSCALE); // Calculate Amps from analog sensor
+
+    // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
+    // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
+    // the serial delay to get more stable cycle times.
+    // 115200 = ~2ms cycle
+    // 230400 = ~1.5ms cycle
+    // All faster bauds = ~1ms cycle
+    // minimum looptime is set to 1ms for all higher baud rates.
+
+    uint32_t thisDelay;
+    uint32_t loopTime = micros() - loopStart;
+    if(!LOOPDELAY) {
+      switch(UARTBAUD) {
+      case 115200:
+        thisDelay = (1897 - loopTime);
+        break;
+
+      case 230400:
+        thisDelay = (1497 - loopTime);
+        break;
+
+      default:
+        thisDelay = (997 - loopTime);
+        break;
+      }
+    }
+    else {
+      thisDelay = LOOPDELAY - loopTime;
+    }
+    if (thisDelay > 0) {
+      delayMicroseconds(thisDelay);
+    }
+  }
+  while(Serial.available()) {
+    character = Serial.read();
+    delay(1);
+  }
+}

@@ -111,6 +111,9 @@ void loop() {
   if(input.indexOf("v") >= 0) {
     returnVoltage();
   }
+  if(input.indexOf("w") >= 0) {
+    returnScale();
+  }
   if(input.indexOf("k") >= 0) {
     kvTest();
   }
