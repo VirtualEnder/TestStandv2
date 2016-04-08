@@ -506,7 +506,7 @@ void mainTest() {
     Serial.print(",");
     Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
-    Serial.println(((float)currentValue/4096) * (float)CSCALE); // Calculate Amps from analog sensor
+    Serial.println(((float)currentValue-2048) * (float)CSCALE); // Calculate Amps from analog sensor
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
