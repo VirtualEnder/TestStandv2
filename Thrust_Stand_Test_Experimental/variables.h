@@ -39,3 +39,5 @@ union f_bytes
 //need more testing to determine optimal number of steps to average
 volatile uint32_t step_times[STEP_COUNT];
 volatile uint32_t step_idx = 0;
+
+uint16_t pwmMultiplier = 1000;

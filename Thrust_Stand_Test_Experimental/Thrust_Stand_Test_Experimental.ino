@@ -56,6 +56,21 @@ void setup() {
     attachInterrupt(PUSH2, countRpms2, FALLING);
   }
 
+
+  switch (PWMSCALE) {
+     case 1:
+       pwmMultiplier = 1000;
+       break;
+       
+     case 2: 
+       pwmMultiplier = 336;
+       break;
+     
+     case 3: 
+       pwmMultiplier = 160;
+       break;
+  }
+  
   scale.set_scale(LSCALE);  // Eventually set this via EEPROM
   scale.tare();	            // Reset the scale to 0
 
@@ -81,8 +96,8 @@ void loop() {
   }
 
   // Prompt for input and read it
-  Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate),");
-  Serial.println("      b(Brake Test), r(Rate Test), k(KV Test), s(Start), or i(Idle)");
+  Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate), s(Stepping Test)");
+  Serial.println("      b(Brake Test), r(Rate Test), k(KV Test), m(Main Test), or i(Idle)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -108,20 +123,29 @@ void loop() {
   if(input.indexOf("b") >= 0) {
     brakeTest();
   } else
-  if(input.indexOf("s") >= 0) {
+  if(input.indexOf("m") >= 0) {
     mainTest();
   } else
   if(input.indexOf("r") >= 0) {
     rateTest();
-  }
+  } else 
   if(input.indexOf("v") >= 0) {
     returnVoltage();
-  }
+  } else
   if(input.indexOf("w") >= 0) {
     returnScale();
-  }
+  } else
   if(input.indexOf("k") >= 0) {
     kvTest();
+  } else
+  if(input.indexOf("s") >= 0) {
+    steppingTest();
+  } else
+  if(input.indexOf("l") >= 0) {
+    latencyTest();
+  } else
+  if(input.indexOf("z") >= 0) {
+    customTest();
   }
   delay(100);
 }

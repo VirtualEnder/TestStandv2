@@ -54,9 +54,10 @@ void initPWMOut () {
   
       GPIOPinConfigure(GPIO_PB6_M0PWM0);                // Map PB6 to PWM0 G0, OP 0
       GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_6);      //Configure PB6 as PWM
- 
+       
+      uint64_t PWMPeriod = (SysCtlClockGet () / ESCRATE);
       PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
-      PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, 80000 - 1);    //Set period of PWM0 G0
+      PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, PWMPeriod - 1);    //Set period of PWM0 G0
       PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, MINCOMMAND*10);    //Set duty cycle of PWM0 G0
       PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT | PWM_OUT_1_BIT , true);    //Enable OP 0,1 on PWM0 G0
       PWMGenEnable(PWM0_BASE, PWM_GEN_0);    //Enable PWM0, G0*/
@@ -71,7 +72,10 @@ void updatePWM(unsigned pulseWidth) {
     pulseWidth = MINCOMMAND;
     
   // Convert 1000-2000us range to 125-250us range and apply to PWM output
-  uint32_t dutyCycle = (pulseWidth *10);
+  uint32_t dutyCycle = (pulseWidth * pwmMultiplier)/100;
+  if(PWMSCALE == 3) {
+    dutyCycle -= 1190;
+  }
   PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, dutyCycle);    //Set duty cycle of PWM0 G0
         
 }
@@ -79,7 +83,7 @@ void updatePWM(unsigned pulseWidth) {
 void initRPMCount() {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);  
   TimerConfigure(TIMER2_BASE, TIMER_CFG_PERIODIC); 
-  uint64_t ulPeriod = (SysCtlClockGet () / 1000000);
+  uint64_t ulPeriod = (SysCtlClockGet () / (1000000));
   TimerLoadSet(TIMER2_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER2A); 
   TimerIntEnable(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 
