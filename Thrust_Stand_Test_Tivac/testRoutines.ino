@@ -202,7 +202,7 @@ void brakeTest() {
         Serial.print("oSteps,");
       }
       if(MAGSENS) {
-        Serial.println("ePRMs,");
+        Serial.println("eRPMs,");
       }
       if(OPTISENS) {
         Serial.println("oRPMs,");
@@ -310,7 +310,7 @@ void mainTest() {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.print("ePRMs,");
+      Serial.print("eRPMs,");
     }
     if(OPTISENS) {
       Serial.print("oRPMs,");
@@ -464,7 +464,7 @@ void kvTest() {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.print("ePRMs,");
+      Serial.print("eRPMs,");
     }
     if(OPTISENS) {
       Serial.print("oRPMs,");

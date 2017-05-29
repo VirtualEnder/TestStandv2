@@ -73,10 +73,10 @@ void loop() {
   stepDiff2 = 0;
   updatePWM(MINCOMMAND);  // Double check throttle is at 0
   
-  if(!isTared) {
-    scale.tare();
-    isTared = true;
-  }
+  //if(!isTared) {
+    //scale.tare();
+    //isTared = true;
+  //}
   
   // Prompt for input and read it
   Serial.println("Type t(Tare), v(Battery Voltage), c(Calibrate), b(Brake Test), k(KV Test), s(Start), or i(Idle)");

@@ -25,7 +25,7 @@
 
 // Analog Configuation
 #define OVERSAMPLING 64    // Analog oversampling multiplier
-#define VSCALE    36.08    // Scale factor for Voltage divider.
+#define VSCALE    36.31    // Scale factor for Voltage divider.
 #define CSCALE     -0.1    // Scale factor for current sensor.
 #define LSCALE     -429    // Scale factor for load cell amplifier.
 
