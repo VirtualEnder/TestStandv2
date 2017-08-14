@@ -26,7 +26,9 @@
 // Analog Configuation
 #define OVERSAMPLING 64    // Analog oversampling multiplier
 #define VSCALE    36.31    // Scale factor for Voltage divider.
+#define VOFFSET       0    // Voltage offset value.
 #define CSCALE  -0.1078    // Scale factor for current sensor.
+#define COFFSET       1    // Current offset value.
 #define LSCALE     -429    // Scale factor for load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
