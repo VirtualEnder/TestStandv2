@@ -41,7 +41,7 @@ void returnVoltage() {
     delay(20);
     input="";
     Serial.print("Current Battery Voltage: ");
-    Serial.println(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.println(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
     isTestRunning = false;
 }
 
@@ -385,9 +385,9 @@ void rateTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE);
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET);
     Serial.print(",");
-    Serial.println(((float)currentValue/4096) * (float)CSCALE);
+    Serial.println(((float)currentValue/4096) * (float)CSCALE + COFFSET);
 
     //the following code makes sure we're running at a constant loop time
     loop_time = micros() - curr_time;
@@ -500,9 +500,9 @@ void steppingTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
     Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE); // Calculate Amps from analog sensor
+    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -646,9 +646,9 @@ void mainTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
     Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE); // Calculate Amps from analog sensor
+    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -909,9 +909,9 @@ void kvTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
     Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE); // Calculate Amps from analog sensor
+    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -1052,9 +1052,9 @@ void customTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE); // Calculate Volts from analog sensor
+    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
     Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE); // Calculate Amps from analog sensor
+    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
