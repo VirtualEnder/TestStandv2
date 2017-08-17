@@ -31,7 +31,7 @@
 #define VOFFSET       0    // Offset value for Voltage divider.
 #define CSCALE  -0.1078    // Scale factor for current sensor.
 #define COFFSET       1    // Offset value for current sensor.
-#define LSCALE     -430    // Scale factor for load cell amplifier.
+#define LSCALE     -427    // Scale factor for load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM  25000  // Maximum RPM limit used in braking test.
