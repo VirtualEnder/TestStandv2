@@ -198,11 +198,13 @@ void brakeTest() {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.println("eRPMs,");
+      Serial.print("eRPMs,");
     }
     if(OPTISENS) {
-      Serial.println("oRPMs,");
+      Serial.print("oRPMs,");
     }
+    Serial.print("Volts,");		
+    Serial.println("Amps");
 
     // Initiate test run
     startTime=micros();
@@ -269,7 +271,8 @@ void brakeTest() {
       if(OPTISENS) {
         theseRpms = calculateRPMs(stepDiff2);
       }
-      Serial.println(theseRpms);
+      Serial.print(theseRpms);
+      Serial.println(",,");
 
     }
   } 
@@ -587,16 +590,16 @@ void mainTest() {
 
   //six second ramp up
   ramp_add_static(&r, 1250, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1500, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1750, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
   ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 6000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
@@ -730,7 +733,7 @@ void latencyTest() {
   ramp_init(&r);
 
   //six second ramp up
-  ramp_add_static(&r, 1100, 500);
+  ramp_add_static(&r, IDLEPWM, 500);
   ramp_add_static(&r, 1250, 250);
   ramp_add_static(&r, 1300, 30);
   ramp_add_static(&r, 1250, 470);
@@ -758,7 +761,7 @@ void latencyTest() {
   ramp_add_static(&r, 1750, 490);
   ramp_add_static(&r, 1800, 1);
   ramp_add_static(&r, 1750, 249);
-  ramp_add_static(&r, 1100, 499);
+  ramp_add_static(&r, IDLEPWM, 499);
   ramp_add_static(&r, MINCOMMAND, 500);
 
   prev_pwm = 0;
@@ -859,7 +862,7 @@ void kvTest() {
   //six second ramp up
   ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 3000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
@@ -994,15 +997,15 @@ void customTest() {
   ramp_init(&r);
 
   //six second ramp up
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1185, 2000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1190, 2000);
-  ramp_add_static(&r, 1100, 2000);
-  ramp_add_range(&r, 1100, 1185, 6000);
-  ramp_add_static(&r, 1100, 2000);
-  ramp_add_range(&r, 1100, 1190, 6000);
-  ramp_add_static(&r, 1100, 2000);
+  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_range(&r, IDLEPWM, 1185, 6000);
+  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_range(&r, IDLEPWM, 1190, 6000);
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
