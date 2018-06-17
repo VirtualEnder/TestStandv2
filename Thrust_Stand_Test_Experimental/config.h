@@ -27,13 +27,18 @@
 
 // Analog Configuation
 #define OVERSAMPLING 64    // Analog oversampling multiplier
-#define VSCALE    36.30    // Scale factor for Voltage divider.
-#define CSCALE     -0.1    // Scale factor for current sensor.
-#define LSCALE     -430    // Scale factor for load cell amplifier.
+//#define VSCALE    36.40    // Scale factor for Voltage divider.
+#define VSCALE   36.47  // Scale factor for Unit 2 Voltage divider.
+#define VOFFSET       0    // Offset value for Voltage divider.
+#define CSCALE  -0.1083    // Scale factor for current sensor.
+//#define CSCALE  -0.1078    // Scale factor for Unit 2 current sensor.
+#define COFFSET       11.0    // Offset value for current sensor.
+//#define LSCALE     -426    // Scale factor for load cell amplifier.
+#define LSCALE     390    // Scale factor for Unit 2 load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
-#define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
-#define BRAKEMINRPM 8000   // Maximum RPM limit used in braking test.
-#define BRAKERPMSAMPLE 250 // Sample size of RPM averaging for target RPM detection during brake test.
+#define BRAKEMAXRPM  25000  // Maximum RPM limit used in braking test.
+#define BRAKEMINRPM   8000  // Maximum RPM limit used in braking test.
+#define BRAKERPMSAMPLE 250  // Sample size of RPM averaging for target RPM detection during brake test.
 
 #define STEP_COUNT 20 //number of steps to average for RPM calculation
