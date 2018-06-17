@@ -1,4 +1,5 @@
 
+
 /*
 ################################
  #     Scale Tare Routine       #
@@ -39,15 +40,10 @@ void returnVoltage() {
     isTestRunning = true;
     delay(20);
     input="";
-<<<<<<< HEAD
     Serial.print("Battery Voltage: ");
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(", Current: ");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print("Current Battery Voltage: ");
-    Serial.println(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
->>>>>>> origin/master
     isTestRunning = false;
 }
 
@@ -204,13 +200,11 @@ void brakeTest() {
       Serial.print("oSteps,");
     }
     if(MAGSENS) {
-      Serial.print("eRPMs,");
+      Serial.println("eRPMs,");
     }
     if(OPTISENS) {
-      Serial.print("oRPMs,");
+      Serial.println("oRPMs,");
     }
-    Serial.print("Volts,");		
-    Serial.println("Amps");
 
     // Initiate test run
     startTime=micros();
@@ -277,8 +271,7 @@ void brakeTest() {
       if(OPTISENS) {
         theseRpms = calculateRPMs(stepDiff2);
       }
-      Serial.print(theseRpms);
-      Serial.println(",,");
+      Serial.println(theseRpms);
 
     }
   } 
@@ -394,15 +387,9 @@ void rateTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-<<<<<<< HEAD
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET);
-    Serial.print(",");
-    Serial.println(((float)currentValue/4096) * (float)CSCALE + COFFSET);
->>>>>>> origin/master
 
     //the following code makes sure we're running at a constant loop time
     loop_time = micros() - curr_time;
@@ -515,15 +502,9 @@ void steppingTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-<<<<<<< HEAD
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
->>>>>>> origin/master
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -608,16 +589,16 @@ void mainTest() {
 
   //six second ramp up
   ramp_add_static(&r, 1250, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, 1500, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, 1750, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
   ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 6000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
@@ -667,15 +648,9 @@ void mainTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-<<<<<<< HEAD
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
->>>>>>> origin/master
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -757,7 +732,7 @@ void latencyTest() {
   ramp_init(&r);
 
   //six second ramp up
-  ramp_add_static(&r, IDLEPWM, 500);
+  ramp_add_static(&r, 1100, 500);
   ramp_add_static(&r, 1250, 250);
   ramp_add_static(&r, 1300, 30);
   ramp_add_static(&r, 1250, 470);
@@ -785,7 +760,7 @@ void latencyTest() {
   ramp_add_static(&r, 1750, 490);
   ramp_add_static(&r, 1800, 1);
   ramp_add_static(&r, 1750, 249);
-  ramp_add_static(&r, IDLEPWM, 499);
+  ramp_add_static(&r, 1100, 499);
   ramp_add_static(&r, MINCOMMAND, 500);
 
   prev_pwm = 0;
@@ -886,7 +861,7 @@ void kvTest() {
   //six second ramp up
   ramp_add_range(&r, MINTHROTTLE, MAXTHROTTLE, 3000);
   ramp_add_static(&r, MAXTHROTTLE, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
@@ -936,15 +911,9 @@ void kvTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-<<<<<<< HEAD
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
->>>>>>> origin/master
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -1027,15 +996,15 @@ void customTest() {
   ramp_init(&r);
 
   //six second ramp up
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, 1185, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, 1190, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_range(&r, IDLEPWM, 1185, 6000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_range(&r, IDLEPWM, 1190, 6000);
-  ramp_add_static(&r, IDLEPWM, 2000);
+  ramp_add_static(&r, 1100, 2000);
+  ramp_add_range(&r, 1100, 1185, 6000);
+  ramp_add_static(&r, 1100, 2000);
+  ramp_add_range(&r, 1100, 1190, 6000);
+  ramp_add_static(&r, 1100, 2000);
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
@@ -1085,15 +1054,9 @@ void customTest() {
     Serial.print(",");
     Serial.print(theseRpms);
     Serial.print(",");
-<<<<<<< HEAD
     Serial.print((((float)voltageValue/4096) + VOFFSET) * (float)VSCALE); // Calculate Volts from analog sensor
     Serial.print(",");
     Serial.println((((float)currentValue-2048) + COFFSET) * (float)CSCALE); // Calculate Amps from analog sensor
-=======
-    Serial.print(((float)voltageValue/4096) * (float)VSCALE + VOFFSET); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(((float)currentValue-2048) * (float)CSCALE + COFFSET); // Calculate Amps from analog sensor
->>>>>>> origin/master
 
     // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
     // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
@@ -1132,3 +1095,4 @@ void customTest() {
     delay(1);
   }
 }
+
