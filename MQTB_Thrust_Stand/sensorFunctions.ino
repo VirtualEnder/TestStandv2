@@ -1,4 +1,11 @@
+// Current and Voltage functions
 
+float getVoltage(int analogValue) {
+    return ((((float)analogValue/4096) * (float)VSCALE) + VOFFSET); // Calculate Volts from analog sensor
+}
+float getCurrent(int analogValue) {
+    return ((((float)analogValue-2048) * (float)CSCALE) + COFFSET); // Calculate Amps from analog sensor
+}
 
 // RPM Count and calculations
 
@@ -55,4 +62,3 @@ int averageRPMs() {
   }
   return (120000000/result*POLES);
 }
-

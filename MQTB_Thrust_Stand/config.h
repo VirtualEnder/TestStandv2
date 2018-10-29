@@ -3,9 +3,11 @@
 #define PART_TM4C123GH6PM  //Set board type to TivaC instead of Stellaris
 
 // Rates
-#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200) 
+#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200)
 #define SENSORRATE  250     // Refresh rate in HZ of load cell and analog read timer.
-#define LOOPDELAY  4000     // Set loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
+#define LOOPDELAY  4000     // Loop time of main test sequence (doesn't affect brake test). Set to false for lowest stable looptime based on UARTBAUD
+#define ESCRATE    1000     // PWM update rate for ESC in HZ
+#define PWMSCALE      1     // Type of PWM signal: 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot
 
 // Sensor and Motor configuration
 #define MAGSENS    true     // Using Magnetic RPM sensor?
@@ -25,13 +27,17 @@
 
 // Analog Configuation
 #define OVERSAMPLING 64    // Analog oversampling multiplier
-#define VSCALE    36.31    // Scale factor for Voltage divider.
-#define VOFFSET       0    // Voltage offset value.
-#define CSCALE  -0.1078    // Scale factor for current sensor.
-#define COFFSET       1    // Current offset value.
-#define LSCALE     -429    // Scale factor for load cell amplifier.
+
+//#define VSCALE    36.40    // Scale factor for Voltage divider.
+#define VSCALE   0.008890511  // Scale factor for Unit 2 Voltage divider.  36.47
+#define VOFFSET       0.032248175    // Offset value for Voltage divider.
+#define CSCALE  -0.1314375    // Scale factor for Unit 2 current sensor. -0.130701754
+#define COFFSET 268.180375    // Offset value for current sensor. 266.0359649
+#define LSCALE     391    // Scale factor for load cell amplifier.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
 #define BRAKEMINRPM 8000   // Maximum RPM limit used in braking test.
 #define BRAKERPMSAMPLE 250 // Sample size of RPM averaging for target RPM detection during brake test.
+
+#define STEP_COUNT 20 //number of steps to average for RPM calculation
