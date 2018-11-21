@@ -7,11 +7,11 @@ void adcTimer (unsigned Hz) {
   ADCSequenceDisable(ADC0_BASE, 0);
   
   ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 3);
-  ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
-  ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH0);
-  ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH0);
-  ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH0);
-  ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_CH1);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH2);  // CH2 = PE_1
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH2);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH2);
+  ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_CH1);  // CH1 = PE_2
   ADCSequenceStepConfigure(ADC0_BASE, 0, 5, ADC_CTL_CH1);
   ADCSequenceStepConfigure(ADC0_BASE, 0, 6, ADC_CTL_CH1);
   ADCSequenceStepConfigure(ADC0_BASE, 0, 7, ADC_CTL_CH1 | ADC_CTL_IE | ADC_CTL_END);
@@ -52,8 +52,8 @@ void initPWMOut () {
       SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);       //Enable control of PWM module 0
       SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);      //Enable control of GPIO B
   
-      GPIOPinConfigure(GPIO_PB6_M0PWM0);                // Map PB6 to PWM0 G0, OP 0
-      GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_6);      //Configure PB6 as PWM
+      GPIOPinConfigure(GPIO_PB4_M0PWM2);                // Map PB6 to PWM0 G0, OP 0
+      GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as PWM
        
       uint64_t PWMPeriod = (SysCtlClockGet () / ESCRATE);
       PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
@@ -105,4 +105,3 @@ void rpmTimer() {
     
   }
 }
-

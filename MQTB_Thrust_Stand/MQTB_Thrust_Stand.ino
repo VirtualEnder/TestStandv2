@@ -2,13 +2,13 @@
 
 Pin connections for this software:
 
-PWM Output:                  Pin 14 or PB_6
-Current Sensor:              Pin 29 or PE_2
-Voltage Sensor:              Pin 28 or PE_3
-Load Cell Amp HX711.DOUT     Pin 9 or PA_6
-              HX711.PD_SCK   Pin 8 or PA_5
-Electical/Magnetic RPMs      Pin 31 or PF_4 or PUSH1
-Optical RPMs                 Pin 17 or PF_0 or PUSH2
+PWM Output:                  Pin 7,A5 or PB_4
+Voltage Sensor:              Pin 27,AY or PE_1
+Current Sensor:              Pin 28,AX or PE_2
+Load Cell Amp HX711.DOUT     Pin 38,A6 or PB_3
+              HX711.PD_SCK   Pin 19,A7 or PB_2
+Electical/Magnetic RPMs      Pin 31,A1 or PF_4 or PUSH1
+Optical RPMs                 Pin 17,B1 or PF_0 or PUSH2
 
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
@@ -70,6 +70,7 @@ void setup() {
        pwmMultiplier = 160;
        break;
   }
+  
   
   scale.set_scale(LSCALE);  // Eventually set this via EEPROM
   scale.tare();	            // Reset the scale to 0
@@ -149,7 +150,3 @@ void loop() {
   }
   delay(100);
 }
-
-
-
-

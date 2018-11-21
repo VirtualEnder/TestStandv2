@@ -1,9 +1,9 @@
 
 // Scale Pins
-// HX711.DOUT	- pin #9
-// HX711.PD_SCK	- pin #8
-HX711 scale(9, 8);
-
+// HX711.DOUT  - pin #38
+// HX711.PD_SCK - pin #19
+HX711 scale(38, 19);
+  
 // RPM input variables
 volatile uint32_t stepCount1 = 0;
 volatile uint32_t stepCount2 = 0;
