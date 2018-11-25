@@ -75,7 +75,7 @@ void updatePWM(unsigned pulseWidth) {
   if(PWMSCALE == 3) {
     dutyCycle -= 1190;
   }
-  PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, dutyCycle);    //Set duty cycle of PWM0 G0
+  PWMPulseWidthSet(PWM0_BASE, PWM_OUT_2, dutyCycle);    //Set duty cycle of PWM0 G0
         
 }
 
