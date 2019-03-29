@@ -7,7 +7,7 @@ float getCurrent(int analogValue) {
     return ((((float)analogValue-2048) * (float)CSCALE) + COFFSET); // Calculate Amps from analog sensor
 }
 float getThrust(int inputValue) {
-   return (float)inputValue + LOFFSET;        // Adjustment for Load Cell 
+   return (((float)inputValue * (float)LSCALE) + LOFFSET);        // Adjustment for Load Cell 
 }
 // RPM Count and calculations
 
