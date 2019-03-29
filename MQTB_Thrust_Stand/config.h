@@ -33,6 +33,7 @@
 #define CSCALE  -0.131         // Scale factor (in mV per Amp) for Unit 2 current sensor. -0.130701754 -0.1314375
 #define COFFSET -1.7            // Offset value for current sensor. 266.0359649 268.180375
 #define LSCALE  -428          // Scale factor for load cell amplifier.
+#define LOFFSET 0             // Scale offset
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
