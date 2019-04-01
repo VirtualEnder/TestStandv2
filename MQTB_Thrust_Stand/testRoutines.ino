@@ -26,6 +26,8 @@ void returnScale() {
     input="";
     Serial.print("Current Load Value: ");
     Serial.println(thrust);
+    Serial.print("Adjusted Load Value: ");
+    Serial.println(getThrust(thrust));
     isTestRunning = false;
 }
 
@@ -256,7 +258,7 @@ void brakeTest() {
       Serial.print(",");
       Serial.print(escMicros);
       Serial.print(",");
-      Serial.print(thrust);
+      Serial.print(getThrust(thrust));
       Serial.print(",");
       if(MAGSENS) {
         Serial.print(stepCount1);
@@ -378,7 +380,7 @@ void rateTest() {
       }
 
     // Print out data
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     Serial.print(",");
     Serial.print(curr_pwm);
@@ -491,7 +493,7 @@ void steppingTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     if(MAGSENS) {
       Serial.print(stepCount1);
@@ -637,7 +639,7 @@ void mainTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     if(MAGSENS) {
       Serial.print(stepCount1);
@@ -799,7 +801,7 @@ void latencyTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     if(MAGSENS) {
       Serial.print(stepCount1);
@@ -900,7 +902,7 @@ void kvTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     if(MAGSENS) {
       Serial.print(stepCount1);
@@ -1043,7 +1045,7 @@ void customTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(thrust);
+    Serial.print(getThrust(thrust));
     Serial.print(",");
     if(MAGSENS) {
       Serial.print(stepCount1);
