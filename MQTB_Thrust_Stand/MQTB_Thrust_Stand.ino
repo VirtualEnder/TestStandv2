@@ -72,7 +72,7 @@ void setup() {
   }
   
   
-  scale.set_scale(1);       // Eventually set this via EEPROM
+  scale.set_scale(LHSCALE); // Eventually set this via EEPROM
   scale.tare();	            // Reset the scale to 0
 
   adcTimer(SENSORRATE);     // Start timer for load cell and analog reads
