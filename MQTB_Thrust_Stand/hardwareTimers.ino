@@ -41,7 +41,7 @@ void Timer1IntHandler() {
       ADCProcessorTrigger(ADC0_BASE, 0);
     }
     if(scale.is_ready()){
-      thrust = getThrust(scale.get_units());
+      thrust = scale.get_units();
     }
   }
 
