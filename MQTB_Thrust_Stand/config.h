@@ -35,6 +35,8 @@
 #define LHSCALE -428         // Hardware scale factor sent to library
 #define LSCALE  1            // Software scale factor for cross-site calibration formula.
 #define LOFFSET 0            // Scale offset used for cross site calibration formula.
+#define RSCALE  1            // Scale factor for cross-site calibration formula.
+#define ROFFSET 0            // Scale offset used for cross site calibration formula.
 
 // Brake Test Configuration      NOTE: The braking test always runs at the maximum speed allowed by UARTBAUD
 #define BRAKEMAXRPM 30000  // Maximum RPM limit used in braking test.
