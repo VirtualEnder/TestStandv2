@@ -41,7 +41,7 @@ int calculateRPMs (int thisTime, boolean useAverage = true) {
     }
     int outRPMs = (120000000/(thisTime*POLES));
     if(outRPMs < 52000 && outRPMs > 600)
-      last_ret = outRPMs;
+      last_ret = (((float)outRPMs * (float)RSCALE) + ROFFSET);
   }
   return last_ret;
 }
