@@ -9,8 +9,13 @@
 void tareScale() {
   delay(20);
   input="";
-  Serial.println("Taring");
-  scale.tare();
+  
+  if(USE_LOAD_CELL) {
+    Serial.println("Taring");
+    scale.tare();
+  } else {
+    Serial.println("No Load Cell Configured");
+  }
 }
 
 
@@ -26,8 +31,6 @@ void returnScale() {
     input="";
     Serial.print("Current Load Value: ");
     Serial.println(thrust);
-    Serial.print("Adjusted Load Value: ");
-    Serial.println(getThrust(thrust));
     isTestRunning = false;
 }
 
@@ -94,371 +97,23 @@ void idle() {
   delay(20);
   Serial.println("Idling, press any key to exit");
   delay(2000);
-
-  // Idle for 4 seconds
-  startTime=micros();
-  updatePWM(IDLEPWM);
-  while(!Serial.available()&& micros()-startTime < 4000000) {
-  }
-  while(Serial.available()) {
-    character = Serial.read();
-    delay(1);
-  }
-  isTared = false;
-}
-
-
-/*
-################################
- #     Brake Test Routine       #
- ################################
- */
-
-void brakeTest() {
-
-  delay(20);
-  Serial.println("Begining automated braking test, press any key to exit");
-  delay(2000);
-
-  isTestRunning = true;
-  uint16_t escMicros = MINCOMMAND;
-  uint16_t minRPMThrottle = 0;
-  uint16_t maxRPMThrottle = 0;
-  Average<uint16_t> avgRPMs(BRAKERPMSAMPLE);
-
-  Serial.println("Calibrating Braking RPMs");
-  delay(1000);
-  escMicros = MINTHROTTLE;
-  updatePWM(escMicros);
-  delay(2000);
-
-  startTime=micros();
-  while(!Serial.available() && isTestRunning) {
-
-    loopStart = micros();
-    uint32_t currentLoopTime = loopStart-startTime;
-    if (currentLoopTime <= 0) {
-      currentLoopTime = 1;
-    }
-    if(currentLoopTime<6000000)
-      // Iterate through whole throttle range based on time
-      escMicros = (((float)(currentLoopTime)/6000000.0)*(2000-MINTHROTTLE))+ MINTHROTTLE;
-    else if(currentLoopTime<=7000000)
-      escMicros = MINCOMMAND;
-    else {
-      isTestRunning = false;
-      isTared = false;
-    }
-    if(escMicros != currentMicros) {
-      updatePWM(escMicros);
-      currentMicros = escMicros;
-    }
-    for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
-      delayMicroseconds(200);
-      if(MAGSENS) {
-        avgRPMs.push(stepDiff1);
-      }
-      if(OPTISENS) {
-        avgRPMs.push(stepDiff2);
-      }
-    }
-    float thisAvg = calculateRPMs(avgRPMs.mean(), false);
-    avgRPMs.clear();
-    uint16_t thisLoop = micros() - loopStart;
-    /*Serial.print("Average : ");
-     Serial.println(thisAvg);
-     Serial.print("Throttle: ");
-     Serial.println(escMicros);*/
-    if(thisAvg > BRAKEMINRPM && minRPMThrottle == 0) {
-      minRPMThrottle = currentMicros;
-    }
-    if(thisAvg > BRAKEMAXRPM && maxRPMThrottle == 0) {
-      maxRPMThrottle = currentMicros;
-    }
-  }
-
-  if (minRPMThrottle > 0 && maxRPMThrottle > 0) {
-    scale.tare();
-    Serial.println("Beginning Brake test:");
-    Serial.print("Low Throttle: ");
-    Serial.print(minRPMThrottle);
-    Serial.print(" High Throttle: ");
-    Serial.println(maxRPMThrottle);
-    Serial.print("Low RPM Target: ");
-    Serial.print(BRAKEMINRPM);
-    Serial.print(" High RPM Target: ");
-    Serial.println(BRAKEMAXRPM);
-
-    delay(2000);
-
-    // Print CSV header output
-    Serial.print("Time(uS),");
-    Serial.print("Throttle(uS),");
-    Serial.print("Thrust(g),");
-    if(MAGSENS) {
-      Serial.print("eSteps,");
-    }
-    if(OPTISENS) {
-      Serial.print("oSteps,");
-    }
-    if(MAGSENS) {
-      Serial.println("eRPMs,");
-    }
-    if(OPTISENS) {
-      Serial.println("oRPMs,");
-    }
-
-    // Initiate test run
-    startTime=micros();
-    isTestRunning = true;
-    escMicros = MINCOMMAND;
-
-    while(!Serial.available() && isTestRunning ) {
-      loopStart = micros();
-      uint32_t currentLoopTime = loopStart-startTime;
-      if(currentLoopTime<2000000)
-        escMicros = minRPMThrottle;
-      else if(currentLoopTime<4000000)
-        escMicros = maxRPMThrottle;
-      else if(currentLoopTime<6000000)
-        escMicros = minRPMThrottle;
-      else if(currentLoopTime<8000000)
-        escMicros = MINCOMMAND;
-      else {
-        // End test and reset variables
-        minRPMThrottle = 0;
-        maxRPMThrottle = 0;
-        isTared = false;
-        isTestRunning = false;
-      }
-      if(escMicros != currentMicros) {
-        updatePWM(escMicros);
-        currentMicros = escMicros;
-      }
-
-      // Grab RPM calculations from last step times.
-      if (MAGSENS) {
-        theseRpms = calculateRPMs(stepDiff1);
-      }
-      if (OPTISENS) {
-        theseRpms = calculateRPMs(stepDiff2);
-      }
-
-      // If no steps have happened in 100ms reset rpms to 0
-      // This means that the minimum RPMs the code is capable of detecting is
-      // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
-      // at about 2000 rpms.
-      if(stepTime1 > 100000 || stepTime2 > 100000) {
-        theseRpms = 0;
-        avgStepDiff1.push(0);
-      }
-
-      // Print out data
-      Serial.print(currentLoopTime);
-      Serial.print(",");
-      Serial.print(escMicros);
-      Serial.print(",");
-      Serial.print(getThrust(thrust));
-      Serial.print(",");
-      if(MAGSENS) {
-        Serial.print(stepCount1);
-      }
-      if(OPTISENS) {
-        Serial.print(stepCount2);
-      }
-      Serial.print(",");
-      if(MAGSENS) {
-        theseRpms = calculateRPMs(stepDiff1);
-      }
-      if(OPTISENS) {
-        theseRpms = calculateRPMs(stepDiff2);
-      }
-      Serial.println(theseRpms);
-
-    }
-  } 
-  else {
-    Serial.println("Throttle positions for target RPMs could not be acquired, aborting test!");
-  }
-  while(Serial.available()) {
-    character = Serial.read();
-    delay(1);
-  }
-}
-
-/*
-################################
- #   ThrustRate test routine    #
- ################################
- */
-void rateTest() {
-  if (LOOPDELAY == 0) {
-    Serial.println("Loop delay must be specified");
-    return;
-  }
-
-  delay(20);
-  Serial.println("Begining automated test, press any key to exit");
-  delay(2000);
-
-  char *headers[8] = {
-    "thrust", "steps", "throttle",
-    "time", "rpms", "volts", "amps", NULL     };
-  //print headers
-  for (int i = 0;headers[i] != NULL; i++) {
-    Serial.print(headers[i]);
-  }
-
-  uint32_t start_time, curr_time, delta_time, loop_delay, loop_time;
-  int prev_pwm, curr_pwm;
-  ramp r;
-
-  //setup code
-  ramp_init(&r);
-  start_time = micros();
-  prev_pwm = 0;
-
-  //add a six second ramp up/down
-  ramp_add_static(&r, IDLEPWM, 2000); //idle for 2 seconds
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 6000); //ramp up over 6 seconds
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 6000); //ramp down over 6 seconds
-  ramp_add_static(&r, IDLEPWM, 500); //hold min throttle for 500ms
-
-  //one second ramp up/down
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 1000); //ramp up over 1 seconds
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 1000); //ramp down over 1 seconds
-  ramp_add_static(&r, IDLEPWM, 500); //hold min throttle for 500ms
-
-  //500ms ramp up/down
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 500); //ramp up over 500ms
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 500); //ramp down over 500ms
-  ramp_add_static(&r, IDLEPWM, 500); //hold min throttle for 500ms
-
-  //250ms ramp up/down
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 250); //ramp up over 250ms
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 250); //ramp down over 250ms
-  ramp_add_static(&r, IDLEPWM, 500); //hold min throttle for 500ms
-
-  //50ms ramp up/down
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 50); //ramp up over 50ms
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 50); //ramp down over 50ms
-  ramp_add_static(&r, IDLEPWM, 2000); //hold min throttle for 500ms
-
-  //main test loop
-  isTestRunning = true;
-  while(!Serial.available()) {
-    curr_time = micros();
-    delta_time = curr_time - start_time;
-
-    //determine the current pwm
-    curr_pwm = ramp_get_pwm(&r, delta_time);
-
-    //-1 means the test is over
-    if (curr_pwm == -1) {
-      isTestRunning = false;
-      break;
-    }
-
-    //only send pwm pulse if necessary
-    if (curr_pwm != prev_pwm) {
-      updatePWM(curr_pwm);
-      prev_pwm = curr_pwm;
-    }
-
-    // Grab RPM calculations from average of last 20 step times
-    if (MAGSENS) {
-      theseRpms = averageRPMs();
-    }
-    else
-      if (OPTISENS) {
-        theseRpms = calculateRPMs(stepDiff2);
-      }
-
-    // Print out data
-    Serial.print(getThrust(thrust));
-    Serial.print(",");
-    Serial.print(",");
-    Serial.print(curr_pwm);
-    Serial.print(",");
-    Serial.print(delta_time);
-    Serial.print(",");
-    Serial.print(theseRpms);
-    Serial.print(",");
-    Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(getCurrent(currentValue)); // Calculate Amps from analog sensor
-
-    //the following code makes sure we're running at a constant loop time
-    loop_time = micros() - curr_time;
-    delayMicroseconds(LOOPDELAY - loop_time);
-  }
-
-  while(Serial.available()) {
-    character = Serial.read();
-    delay(1);
-  }
-}
-
-
-
- /*
- ################################
- #    Stepping Test Routine     #
- ################################
- */
-void steppingTest() {
-  if (LOOPDELAY == 0) {
-    Serial.println("Loop delay must be specified");
-    return;
-  }
-
-  delay(20);
-  Serial.println("Begining automated test, press any key to exit");
-  delay(2000);
-
-  Serial.print("Time(uS),");
-  Serial.print("Throttle(uS),");
-  Serial.print("Thrust(g),");
-  if(MAGSENS) {
-    Serial.print("eSteps,");
-  }
-  if(OPTISENS) {
-    Serial.print("oSteps,");
-  }
-  if(MAGSENS) {
-    Serial.print("eRPMs,");
-  }
-  if(OPTISENS) {
-    Serial.print("oRPMs,");
-  }
-  Serial.print("Volts,");
-  Serial.println("Amps");
-  
+ // Initiate test run
   startTime=micros();
   isTestRunning = true;
   isTared = false;
   int pwm, prev_pwm;
   ramp r;
 
-  //setup code
+  //setup our ramp
   ramp_init(&r);
+
+  //six second ramp up
+  ramp_add_range(&r, MINCOMMAND, IDLEPWM, 500);  // Ramp to IDLE for slower startup
+  ramp_add_static(&r, IDLEPWM, 3500);          // Run at IDLE for time in milliseconds
+  ramp_add_static(&r, MINCOMMAND, 1000);       // Drop back to mincommand to stop motor
+
   prev_pwm = 0;
-
-  //add a six second ramp up/down
-  ramp_add_static(&r, IDLEPWM, 2000); //idle for 2 seconds
-  ramp_add_range(&r, IDLEPWM, MAXTHROTTLE, 12000); //ramp up over 6 seconds
-  ramp_add_static(&r, MAXTHROTTLE, 500); //hold max for 500ms
-  ramp_add_range(&r, MAXTHROTTLE, IDLEPWM, 12000); //ramp down over 6 seconds
-  ramp_add_static(&r, IDLEPWM, 500); //hold min throttle for 500ms
-
-  //main test loop
-  isTestRunning = true;
-  while(!Serial.available()) {
+  while(!Serial.available() && isTestRunning) {
     loopStart = micros();
     pwm = ramp_get_pwm(&r, loopStart - startTime);
     if (pwm == -1) {
@@ -470,85 +125,18 @@ void steppingTest() {
       updatePWM(pwm);
       prev_pwm = pwm;
     }
-
-    // Grab RPM calculations from last step times.
-    if (MAGSENS) {
-      theseRpms = calculateRPMs(stepDiff1);
-    }
-    if (OPTISENS) {
-      theseRpms = calculateRPMs(stepDiff2);
-    }
-
-    // If no steps have happened in 100ms reset rpms to 0
-    // This means that the minimum RPMs the code is capable of detecting is
-    // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
-    // at about 2000 rpms.
-    if(stepTime1 > 100000 || stepTime2 > 100000) {
-      theseRpms = 0;
-      avgStepDiff1.push(0);
-    }
-
-    // Print out data
-    Serial.print(loopStart-startTime);
-    Serial.print(",");
-    Serial.print(pwm);
-    Serial.print(",");
-    Serial.print(getThrust(thrust));
-    Serial.print(",");
-    if(MAGSENS) {
-      Serial.print(stepCount1);
-    }
-    if(OPTISENS) {
-      Serial.print(stepCount2);
-    }
-    Serial.print(",");
-    Serial.print(theseRpms);
-    Serial.print(",");
-    Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(getCurrent(currentValue)); // Calculate Amps from analog sensor
-
-    // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
-    // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
-    // the serial delay to get more stable cycle times.
-    // 115200 = ~2ms cycle
-    // 230400 = ~1.5ms cycle
-    // All faster bauds = ~1ms cycle
-    // minimum looptime is set to 1ms for all higher baud rates.
-
-    uint32_t thisDelay;
-    uint32_t loopTime = micros() - loopStart;
-    if(!LOOPDELAY) {
-      switch(UARTBAUD) {
-      case 115200:
-        thisDelay = (1897 - loopTime);
-        break;
-
-      case 230400:
-        thisDelay = (1497 - loopTime);
-        break;
-
-      default:
-        thisDelay = (997 - loopTime);
-        break;
-      }
-    }
-    else {
-      thisDelay = LOOPDELAY - loopTime;
-    }
-    if (thisDelay > 0) {
-      delayMicroseconds(thisDelay);
-    }
   }
-
+  
   while(Serial.available()) {
     character = Serial.read();
     delay(1);
   }
+  isTared = false;
 }
 
-/*
-################################
+
+ /*
+ ################################
  #      Main test Routine       #
  ################################
  */
@@ -563,18 +151,18 @@ void mainTest() {
   // Print CSV header output
   Serial.print("Time(uS),");
   Serial.print("Throttle(uS),");
-  Serial.print("Thrust(g),");
-  if(MAGSENS) {
-    Serial.print("eSteps,");
+  if(USE_LOAD_CELL) {
+    Serial.print("Thrust(g),");
   }
-  if(OPTISENS) {
-    Serial.print("oSteps,");
-  }
-  if(MAGSENS) {
-    Serial.print("eRPMs,");
-  }
-  if(OPTISENS) {
-    Serial.print("oRPMs,");
+  if(RUN_RPM_TEST) {
+    Serial.print("eSteps 1,");
+    Serial.print("eRPMs 1,");
+    Serial.print("eSteps 2,");
+    Serial.print("eRPMs 2,");
+    Serial.print("eSteps 3,");
+    Serial.print("eRPMs 3,");
+    Serial.print("eSteps 4,");
+    Serial.print("eRPMs 4,");
   }
   Serial.print("Volts,");
   Serial.println("Amps");
@@ -589,7 +177,9 @@ void mainTest() {
   //setup our ramp
   ramp_init(&r);
 
-  //six second ramp up
+
+  ramp_add_range(&r, MINCOMMAND, IDLEPWM, 1000);  // Ramp to IDLE for slower startup
+  ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1250, 2000);
   ramp_add_static(&r, IDLEPWM, 2000);
   ramp_add_static(&r, 1500, 2000);
@@ -604,86 +194,84 @@ void mainTest() {
   ramp_add_static(&r, MINCOMMAND, 2000);
 
   prev_pwm = 0;
+  
   while(!Serial.available() && isTestRunning) {
     loopStart = micros();
     pwm = ramp_get_pwm(&r, loopStart - startTime);
     if (pwm == -1) {
       isTestRunning = false;
       isTared = false;
+      delay(20);
+      Serial.println("Test Ended!");
+      delay(2000);
       break;
     }
     if(pwm != prev_pwm) {
       updatePWM(pwm);
       prev_pwm = pwm;
     }
-
-    // Grab RPM calculations from last step times.
-    if (MAGSENS) {
-      theseRpms = calculateRPMs(stepDiff1);
-    }
-    if (OPTISENS) {
-      theseRpms = calculateRPMs(stepDiff2);
-    }
-
-    // If no steps have happened in 100ms reset rpms to 0
-    // This means that the minimum RPMs the code is capable of detecting is
-    // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
-    // at about 2000 rpms.
-    if(stepTime1 > 100000 || stepTime2 > 100000) {
-      theseRpms = 0;
-      avgStepDiff1.push(0);
-    }
-
-    // Print out data
-    Serial.print(loopStart-startTime);
-    Serial.print(",");
-    Serial.print(pwm);
-    Serial.print(",");
-    Serial.print(getThrust(thrust));
-    Serial.print(",");
-    if(MAGSENS) {
-      Serial.print(stepCount1);
-    }
-    if(OPTISENS) {
-      Serial.print(stepCount2);
-    }
-    Serial.print(",");
-    Serial.print(theseRpms);
-    Serial.print(",");
-    Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(getCurrent(currentValue)); // Calculate Amps from analog sensor
-
-    // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
-    // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
-    // the serial delay to get more stable cycle times.
-    // 115200 = ~2ms cycle
-    // 230400 = ~1.5ms cycle
-    // All faster bauds = ~1ms cycle
-    // minimum looptime is set to 1ms for all higher baud rates.
-
-    uint32_t thisDelay;
-    uint32_t loopTime = micros() - loopStart;
-    if(!LOOPDELAY) {
-      switch(UARTBAUD) {
-      case 115200:
-        thisDelay = (1897 - loopTime);
-        break;
-
-      case 230400:
-        thisDelay = (1497 - loopTime);
-        break;
-
-      default:
-        thisDelay = (997 - loopTime);
-        break;
+    if(RUN_RPM_TEST) {
+      // Grab RPM calculations from last step times.
+      theseRpms[1] = calculateRPMs(stepDiff[1]);
+  
+      // If no steps have happened in 100ms reset rpms to 0
+      // This means that the minimum RPMs the code is capable of detecting is
+      // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+      // at about 2000 rpms.
+      if(stepTime[1] > 100000) {
+        theseRpms[1] = 0;
+        avgStepDiff[1].push(0);
       }
     }
-    else {
-      thisDelay = LOOPDELAY - loopTime;
-    }
-    if (thisDelay > 0) {
-      delayMicroseconds(thisDelay);
+    int32_t sampleTime = loopStart-startTime-3000000;  //Subtract 3 seconds of time to start the counter at 0 when the testing sequence begins.
+
+    if(sampleTime >= 0) {
+      // Print out data
+      Serial.print(sampleTime);
+      Serial.print(",");
+      Serial.print(pwm);
+      Serial.print(",");
+      if(USE_LOAD_CELL) {
+        Serial.print(thrust);
+        Serial.print(",");
+      }
+      if(RUN_RPM_TEST) {
+        Serial.print(stepCount[1]);
+        Serial.print(",");
+        Serial.print(theseRpms[1]);
+        Serial.print(",");
+        Serial.print(stepCount[2]);
+        Serial.print(",");
+        Serial.print(theseRpms[2]);
+        Serial.print(",");
+        Serial.print(stepCount[3]);
+        Serial.print(",");
+        Serial.print(theseRpms[3]);
+        Serial.print(",");
+        Serial.print(stepCount[4]);
+        Serial.print(",");
+        Serial.print(theseRpms[4]);
+        Serial.print(",");
+      }
+      Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
+      Serial.print(",");
+      Serial.print(getCurrent(currentValue)); // Calculate Amps from analog sensor
+      Serial.println("");
+  
+      // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
+      // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
+      // the serial delay to get more stable cycle times.
+      // 115200 = ~2ms cycle
+      // 230400 = ~1.5ms cycle
+      // All faster bauds = ~1ms cycle
+      // minimum looptime is set to 1ms for all higher baud rates.
+      
+      int32_t thisDelay;
+      uint32_t loopTime = micros() - loopStart;
+      thisDelay = loopDelay - loopTime;
+      if (thisDelay > 0) {
+        delayMicroseconds(thisDelay);
+      }
     }
   }
   while(Serial.available()) {
@@ -693,130 +281,6 @@ void mainTest() {
 }
 
 
- /*
- ################################
- #     Latency Test Routine     #
- ################################
- */
-
-void latencyTest() {
-  input="";
-
-  delay(20);
-  Serial.println("Begining automated test, press any key to exit");
-  delay(2000);
-
-  // Print CSV header output
-  Serial.print("Time(uS),");
-  Serial.print("Throttle(uS),");
-  Serial.print("Thrust(g),");
-  if(MAGSENS) {
-    Serial.print("eSteps,");
-  }
-  if(OPTISENS) {
-    Serial.print("oSteps,");
-  }
-  if(MAGSENS) {
-    Serial.print("eRPMs,");
-  }
-  if(OPTISENS) {
-    Serial.print("oRPMs,");
-  }
-
-  // Initiate test run
-  startTime=micros();
-  isTestRunning = true;
-  isTared = false;
-  int pwm, prev_pwm;
-  ramp r;
-
-  //setup our ramp
-  ramp_init(&r);
-
-  //six second ramp up
-  ramp_add_static(&r, IDLEPWM, 500);
-  ramp_add_static(&r, 1250, 250);
-  ramp_add_static(&r, 1300, 30);
-  ramp_add_static(&r, 1250, 470);
-  ramp_add_static(&r, 1300, 20);
-  ramp_add_static(&r, 1250, 480);
-  ramp_add_static(&r, 1300, 10);
-  ramp_add_static(&r, 1250, 490);
-  ramp_add_static(&r, 1300, 1);
-  ramp_add_static(&r, 1250, 249);
-  ramp_add_static(&r, 1500, 250);
-  ramp_add_static(&r, 1550, 30);
-  ramp_add_static(&r, 1500, 470);
-  ramp_add_static(&r, 1550, 20);
-  ramp_add_static(&r, 1500, 480);
-  ramp_add_static(&r, 1550, 10);
-  ramp_add_static(&r, 1500, 490);
-  ramp_add_static(&r, 1550, 1);
-  ramp_add_static(&r, 1500, 249);
-  ramp_add_static(&r, 1750, 250);
-  ramp_add_static(&r, 1800, 30);
-  ramp_add_static(&r, 1750, 470);
-  ramp_add_static(&r, 1800, 20);
-  ramp_add_static(&r, 1750, 480);
-  ramp_add_static(&r, 1800, 10);
-  ramp_add_static(&r, 1750, 490);
-  ramp_add_static(&r, 1800, 1);
-  ramp_add_static(&r, 1750, 249);
-  ramp_add_static(&r, IDLEPWM, 499);
-  ramp_add_static(&r, MINCOMMAND, 500);
-
-  prev_pwm = 0;
-  while(!Serial.available() && isTestRunning) {
-    loopStart = micros();
-    pwm = ramp_get_pwm(&r, loopStart - startTime);
-    if (pwm == -1) {
-      isTestRunning = false;
-      isTared = false;
-      break;
-    }
-    if(pwm != prev_pwm) {
-      updatePWM(pwm);
-      prev_pwm = pwm;
-    }
-
-    // Grab RPM calculations from last step times.
-    if (MAGSENS) {
-      theseRpms = calculateRPMs(stepDiff1);
-    }
-    if (OPTISENS) {
-      theseRpms = calculateRPMs(stepDiff2);
-    }
-
-    // If no steps have happened in 100ms reset rpms to 0
-    // This means that the minimum RPMs the code is capable of detecting is
-    // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
-    // at about 2000 rpms.
-    if(stepTime1 > 100000 || stepTime2 > 100000) {
-      theseRpms = 0;
-      avgStepDiff1.push(0);
-    }
-
-    // Print out data
-    Serial.print(loopStart-startTime);
-    Serial.print(",");
-    Serial.print(pwm);
-    Serial.print(",");
-    Serial.print(getThrust(thrust));
-    Serial.print(",");
-    if(MAGSENS) {
-      Serial.print(stepCount1);
-    }
-    if(OPTISENS) {
-      Serial.print(stepCount2);
-    }
-    Serial.print(",");
-    Serial.println(theseRpms);
-  }
-  while(Serial.available()) {
-    character = Serial.read();
-    delay(1);
-  }
-}
 
 /*
 ################################
@@ -835,18 +299,8 @@ void kvTest() {
   Serial.print("Time(uS),");
   Serial.print("Throttle(uS),");
   Serial.print("Thrust(g),");
-  if(MAGSENS) {
-    Serial.print("eSteps,");
-  }
-  if(OPTISENS) {
-    Serial.print("oSteps,");
-  }
-  if(MAGSENS) {
-    Serial.print("eRPMs,");
-  }
-  if(OPTISENS) {
-    Serial.print("oRPMs,");
-  }
+  Serial.print("eSteps,");
+  Serial.print("eRPMs,");
   Serial.print("Volts,");
   Serial.println("Amps");
 
@@ -881,20 +335,15 @@ void kvTest() {
     }
 
     // Grab RPM calculations from last step times.
-    if (MAGSENS) {
-      theseRpms = calculateRPMs(stepDiff1);
-    }
-    if (OPTISENS) {
-      theseRpms = calculateRPMs(stepDiff2);
-    }
+    theseRpms[1] = calculateRPMs(stepDiff[1]);
 
     // If no steps have happened in 100ms reset rpms to 0
     // This means that the minimum RPMs the code is capable of detecting is
     // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
     // at about 2000 rpms.
-    if(stepTime1 > 100000 || stepTime2 > 100000) {
-      theseRpms = 0;
-      avgStepDiff1.push(0);
+    if(stepTime[1] > 100000) {
+      theseRpms[1] = 0;
+      avgStepDiff[1].push(0);
     }
 
     // Print out data
@@ -902,16 +351,11 @@ void kvTest() {
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
-    Serial.print(getThrust(thrust));
+    Serial.print(thrust);
     Serial.print(",");
-    if(MAGSENS) {
-      Serial.print(stepCount1);
-    }
-    if(OPTISENS) {
-      Serial.print(stepCount2);
-    }
+    Serial.print(stepCount[1]);
     Serial.print(",");
-    Serial.print(theseRpms);
+    Serial.print(theseRpms[1]);
     Serial.print(",");
     Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
     Serial.print(",");
@@ -925,9 +369,9 @@ void kvTest() {
     // All faster bauds = ~1ms cycle
     // minimum looptime is set to 1ms for all higher baud rates.
 
-    uint32_t thisDelay;
+    int32_t thisDelay;
     uint32_t loopTime = micros() - loopStart;
-    if(!LOOPDELAY) {
+    if(!loopDelay) {
       switch(UARTBAUD) {
       case 115200:
         thisDelay = (1897 - loopTime);
@@ -943,7 +387,7 @@ void kvTest() {
       }
     }
     else {
-      thisDelay = LOOPDELAY - loopTime;
+      thisDelay = loopDelay - loopTime;
     }
     if (thisDelay > 0) {
       delayMicroseconds(thisDelay);
@@ -962,7 +406,7 @@ void kvTest() {
  */
 
 void customTest() {
-  input="";
+   input="";
 
   delay(20);
   Serial.println("Begining automated test, press any key to exit");
@@ -971,18 +415,18 @@ void customTest() {
   // Print CSV header output
   Serial.print("Time(uS),");
   Serial.print("Throttle(uS),");
-  Serial.print("Thrust(g),");
-  if(MAGSENS) {
-    Serial.print("eSteps,");
+  if(USE_LOAD_CELL) {
+    Serial.print("Thrust(g),");
   }
-  if(OPTISENS) {
-    Serial.print("oSteps,");
-  }
-  if(MAGSENS) {
-    Serial.print("eRPMs,");
-  }
-  if(OPTISENS) {
-    Serial.print("oRPMs,");
+  if(RUN_RPM_TEST) {
+    Serial.print("eSteps 1,");
+    Serial.print("eRPMs 1,");
+    Serial.print("eSteps 2,");
+    Serial.print("eRPMs 2,");
+    Serial.print("eSteps 3,");
+    Serial.print("eRPMs 3,");
+    Serial.print("eSteps 4,");
+    Serial.print("eRPMs 4,");
   }
   Serial.print("Volts,");
   Serial.println("Amps");
@@ -997,99 +441,111 @@ void customTest() {
   //setup our ramp
   ramp_init(&r);
 
-  //six second ramp up
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_static(&r, 1185, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_static(&r, 1190, 2000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_range(&r, IDLEPWM, 1185, 6000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_range(&r, IDLEPWM, 1190, 6000);
-  ramp_add_static(&r, IDLEPWM, 2000);
-  ramp_add_static(&r, MINCOMMAND, 2000);
+  ramp_add_static(&r, MINCOMMAND, 4000);          // 4 Seconds off
+  ramp_add_range(&r, MINCOMMAND, IDLEPWM, 1000);  // Ramp to IDLE for slower startup
+  ramp_add_static(&r, IDLEPWM, 10000);            // 10 Seconds at Idle
+  ramp_add_static(&r, MAXTHROTTLE, 40000);        // 40 Seconds at Max
+  ramp_add_static(&r, IDLEPWM, 10000);            // 10 Seconds at Idle
+  ramp_add_static(&r, MINCOMMAND, 5000);          // 5 Seconds off
 
   prev_pwm = 0;
+  
   while(!Serial.available() && isTestRunning) {
     loopStart = micros();
     pwm = ramp_get_pwm(&r, loopStart - startTime);
     if (pwm == -1) {
       isTestRunning = false;
       isTared = false;
+      delay(20);
+      Serial.println("Test Ended!");
+      delay(2000);
       break;
     }
     if(pwm != prev_pwm) {
       updatePWM(pwm);
       prev_pwm = pwm;
     }
-
-    // Grab RPM calculations from last step times.
-    if (MAGSENS) {
-      theseRpms = calculateRPMs(stepDiff1);
-    }
-    if (OPTISENS) {
-      theseRpms = calculateRPMs(stepDiff2);
-    }
-
-    // If no steps have happened in 100ms reset rpms to 0
-    // This means that the minimum RPMs the code is capable of detecting is
-    // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
-    // at about 2000 rpms.
-    if(stepTime1 > 100000 || stepTime2 > 100000) {
-      theseRpms = 0;
-      avgStepDiff1.push(0);
-    }
-
-    // Print out data
-    Serial.print(loopStart-startTime);
-    Serial.print(",");
-    Serial.print(pwm);
-    Serial.print(",");
-    Serial.print(getThrust(thrust));
-    Serial.print(",");
-    if(MAGSENS) {
-      Serial.print(stepCount1);
-    }
-    if(OPTISENS) {
-      Serial.print(stepCount2);
-    }
-    Serial.print(",");
-    Serial.print(theseRpms);
-    Serial.print(",");
-    Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
-    Serial.print(",");
-    Serial.println(getCurrent(currentValue)); // Calculate Amps from analog sensor
-
-    // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
-    // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
-    // the serial delay to get more stable cycle times.
-    // 115200 = ~2ms cycle
-    // 230400 = ~1.5ms cycle
-    // All faster bauds = ~1ms cycle
-    // minimum looptime is set to 1ms for all higher baud rates.
-
-    uint32_t thisDelay;
-    uint32_t loopTime = micros() - loopStart;
-    if(!LOOPDELAY) {
-      switch(UARTBAUD) {
-      case 115200:
-        thisDelay = (1897 - loopTime);
-        break;
-
-      case 230400:
-        thisDelay = (1497 - loopTime);
-        break;
-
-      default:
-        thisDelay = (997 - loopTime);
-        break;
+    if(RUN_RPM_TEST) {
+      // Grab RPM calculations from last step times.
+      theseRpms[1] = calculateRPMs(stepDiff[1]);
+  
+      // If no steps have happened in 100ms reset rpms to 0
+      // This means that the minimum RPMs the code is capable of detecting is
+      // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+      // at about 2000 rpms.
+      if(stepTime[1] > 100000) {
+        theseRpms[1] = 0;
+        avgStepDiff[1].push(0);
       }
     }
-    else {
-      thisDelay = LOOPDELAY - loopTime;
-    }
-    if (thisDelay > 0) {
-      delayMicroseconds(thisDelay);
+
+    
+    int32_t sampleTime = loopStart-startTime;  
+
+    if(sampleTime >= 0) {
+      // Print out data
+      Serial.print(sampleTime);
+      Serial.print(",");
+      Serial.print(pwm);
+      Serial.print(",");
+      if(USE_LOAD_CELL) {
+        Serial.print(thrust);
+        Serial.print(",");
+      }
+      if(RUN_RPM_TEST) {
+        Serial.print(stepCount[1]);
+        Serial.print(",");
+        Serial.print(theseRpms[1]);
+        Serial.print(",");
+        Serial.print(stepCount[2]);
+        Serial.print(",");
+        Serial.print(theseRpms[2]);
+        Serial.print(",");
+        Serial.print(stepCount[3]);
+        Serial.print(",");
+        Serial.print(theseRpms[3]);
+        Serial.print(",");
+        Serial.print(stepCount[4]);
+        Serial.print(",");
+        Serial.print(theseRpms[4]);
+        Serial.print(",");
+      }
+      Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
+      Serial.print(",");
+      Serial.print(getCurrent(currentValue)); // Calculate Amps from analog sensor
+      Serial.println("");
+
+      // Delay here adjusts the sample rate for the RPM sensors, as they are updated asynchronously via the interrupts.
+      // Note that cycle times are limited by serial baud rates as well. You can change delay here to just higher than
+      // the serial delay to get more stable cycle times.
+      // 115200 = ~2ms cycle
+      // 230400 = ~1.5ms cycle
+      // All faster bauds = ~1ms cycle
+      // minimum looptime is set to 1ms for all higher baud rates.
+  
+      int32_t thisDelay;
+      uint32_t loopTime = micros() - loopStart;
+      if(!loopDelay) {
+        switch(UARTBAUD) {
+        case 115200:
+          thisDelay = (1897 - loopTime);
+          break;
+  
+        case 230400:
+          thisDelay = (1497 - loopTime);
+          break;
+  
+        default:
+          thisDelay = (997 - loopTime);
+          break;
+        }
+      }
+      else {
+        thisDelay = loopDelay - loopTime;
+      }
+      if (thisDelay > 0) {
+        delayMicroseconds(thisDelay);
+      }
     }
   }
   while(Serial.available()) {

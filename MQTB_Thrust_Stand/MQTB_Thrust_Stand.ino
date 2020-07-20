@@ -2,13 +2,18 @@
 
 Pin connections for this software:
 
-PWM Output:                  Pin 7,A5 or PB_4
-Voltage Sensor:              Pin 27,AY or PE_1
-Current Sensor:              Pin 28,AX or PE_2
-Load Cell Amp HX711.DOUT     Pin 38,A6 or PB_3
-              HX711.PD_SCK   Pin 19,A7 or PB_2
-Electical/Magnetic RPMs      Pin 31,A1 or PF_4 or PUSH1
-Optical RPMs                 Pin 17,B1 or PF_0 or PUSH2
+PWM Output:                  Pin 2 or PE_4 - I/O Board A4
+PWM Output:                  Pin 7 or PB_4 - I/O Board A5
+PWM Output:                  Pin 5 or PC_4 - I/O Board B2
+PWM Output:                  Pin 6 or PC_5 - I/O Board B3
+Voltage Sensor:              Pin 27 or PE_1 - I/O Board AY
+Current Sensor:              Pin 28 or PE_2 - I/O Board AX
+Load Cell Amp HX711.DOUT     Pin 38 or PB_3 - I/O Board A6
+              HX711.PD_SCK   Pin 19 or PB_2 - I/O BOard A7
+M1 RPMs                      Pin 32 or PD_7 - I/O BOard B4
+M2 RPMs                      Pin 33 or PD_6 - I/O BOard B5
+M3 RPMs                      Pin 34 or PC_7 - I/O BOard B6
+M4 RPMs                      Pin 35 or PC_6 - I/O BOard B7
 
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
@@ -43,38 +48,37 @@ void setup() {
   Serial.begin(UARTBAUD);
 
   // attach Interupt for RPM sensor
-  if(MAGSENS) {
-    pinMode(33, OUTPUT);
-    digitalWrite(33,LOW);
-    pinMode(32, OUTPUT);
-    digitalWrite(32,HIGH);
-    pinMode(31, INPUT_PULLUP);
-    attachInterrupt(31, countRpms, FALLING);
-  }
-  if(OPTISENS) {
-    pinMode(PUSH2, INPUT_PULLUP);
-    attachInterrupt(PUSH2, countRpms2, FALLING);
-  }
 
+    int rpmPins[] = {32,33,34,35};
+    void (*rpmFunctions[4])() {rpmTrigger1,rpmTrigger2,rpmTrigger3,rpmTrigger4};
+    for (int i = 0; i < 4; i++) {
+      pinMode(rpmPins[i], INPUT_PULLUP);
+      attachInterrupt(digitalPinToInterrupt(rpmPins[i]), rpmFunctions[i], FALLING);
+    }
 
   switch (PWMSCALE) {
+     case 0:
+       pwmMultiplier = 4000;  // Standard PWM
+       break;
      case 1:
-       pwmMultiplier = 1000;
+       pwmMultiplier = 500;  // Oneshot 125
        break;
        
      case 2: 
-       pwmMultiplier = 336;
+       pwmMultiplier = 168;  // Oneshote 42
        break;
      
      case 3: 
-       pwmMultiplier = 160;
+       pwmMultiplier = 80;   // Multishot
        break;
   }
   
   
-  scale.set_scale(LHSCALE); // Eventually set this via EEPROM
-  scale.tare();	            // Reset the scale to 0
-
+  if(USE_LOAD_CELL) {
+    scale.set_scale(LSCALE);  // Eventually set this via EEPROM
+    scale.tare();	            // Reset the scale to 0
+  }
+  
   adcTimer(SENSORRATE);     // Start timer for load cell and analog reads
   initPWMOut();             // Start PWM output
   initRPMCount();           // Start RPM counter timers
@@ -85,10 +89,14 @@ void loop() {
   
   
   isTestRunning = false;  // Stop reads from load cell and reset step counters
-  stepCount1 = 0;
-  stepCount2 = 0;
-  stepDiff1 = 0;
-  stepDiff2 = 0;
+  stepCount[1] = 0;
+  stepCount[2] = 0;
+  stepCount[3] = 0;
+  stepCount[4] = 0;
+  stepDiff[1] = 0;
+  stepDiff[2] = 0;
+  stepDiff[3] = 0;
+  stepDiff[4] = 0;
   updatePWM(MINCOMMAND);  // Double check throttle is at 0
 
   //if(!isTared) {
@@ -97,8 +105,8 @@ void loop() {
   //}
 
   // Prompt for input and read it
-  Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate), s(Stepping Test)");
-  Serial.println("      b(Brake Test), r(Rate Test), k(KV Test), m(Main Test), or i(Idle)");
+  Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate),");
+  Serial.println("      k(KV Test), m(Main Test), i(Idle) or z(Custom)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -121,15 +129,9 @@ void loop() {
   if(input.indexOf("i") >= 0) {
     idle();
   } else
-  if(input.indexOf("b") >= 0) {
-    brakeTest();
-  } else
   if(input.indexOf("m") >= 0) {
     mainTest();
   } else
-  if(input.indexOf("r") >= 0) {
-    rateTest();
-  } else 
   if(input.indexOf("v") >= 0) {
     returnVoltage();
   } else
@@ -138,12 +140,6 @@ void loop() {
   } else
   if(input.indexOf("k") >= 0) {
     kvTest();
-  } else
-  if(input.indexOf("s") >= 0) {
-    steppingTest();
-  } else
-  if(input.indexOf("l") >= 0) {
-    latencyTest();
   } else
   if(input.indexOf("z") >= 0) {
     customTest();

@@ -60,4 +60,3 @@ int ramp_get_pwm(ramp *r, uint64_t curr_time) {
   }
   return pwm;
 }
-
