@@ -11,7 +11,7 @@ void ramp_init(ramp *r) {
 
 int ramp_add_range(ramp *r, int start_pwm, int end_pwm, int ramp_time_ms) {
   ramp_item *curr, *prev;
-  if (r->len == 32) {
+  if (r->len == 64) {
     return 0;
   }
   curr = &r->items[r->len++];
@@ -34,7 +34,7 @@ int ramp_add_static(ramp *r, int pwm, int hold_time_ms) {
 }
 
 
-int ramp_get_pwm(ramp *r, uint64_t curr_time) {
+int64_t ramp_get_pwm(ramp *r, uint64_t curr_time) {
   ramp_item *p = r->items;
   int i, pwm, pwm_diff;
   int64_t time_diff;

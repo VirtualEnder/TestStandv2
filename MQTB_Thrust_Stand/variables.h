@@ -29,8 +29,8 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput = 0);
 // Misc Variables
 char character;
 String input;
-uint32_t startTime;
-uint32_t loopStart;
+uint64_t startTime;
+uint64_t loopStart;
 boolean isTestRunning = false;
 uint32_t currentMicros = 0;
 boolean isTared = false;
@@ -44,7 +44,7 @@ union f_bytes
 
 //for average step times
 //need more testing to determine optimal number of steps to average
-volatile uint32_t step_times[4][STEP_COUNT];
-volatile uint32_t step_idx[] = {0,0,0,0};
+volatile uint32_t step_times[5][STEP_COUNT];
+volatile uint32_t step_idx[] = {0,0,0,0,0};
 
 uint16_t pwmMultiplier = 1000;

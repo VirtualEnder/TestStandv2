@@ -29,6 +29,9 @@ void returnScale() {
     isTestRunning = true;
     delay(20);
     input="";
+    Serial.println("Load Cell Calibration Value: ");
+    Serial.print("LSCALE: ");
+    Serial.println(LSCALE);
     Serial.print("Current Load Value: ");
     Serial.println(thrust);
     isTestRunning = false;
@@ -45,6 +48,15 @@ void returnVoltage() {
     isTestRunning = true;
     delay(20);
     input="";
+    Serial.println("Electrical Sensor Calibration Values: ");
+    Serial.print("CSCALE: ");
+    Serial.print(CSCALE);
+    Serial.print(" COFFSET: ");
+    Serial.print(COFFSET);
+    Serial.print(" VSCALE: ");
+    Serial.print(VSCALE);
+    Serial.print(" VOFFSET: ");
+    Serial.println(VOFFSET);
     Serial.print("Battery Voltage: ");
     Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
     Serial.print(", Current: ");
@@ -155,14 +167,12 @@ void mainTest() {
     Serial.print("Thrust(g),");
   }
   if(RUN_RPM_TEST) {
-    Serial.print("eSteps 1,");
-    Serial.print("eRPMs 1,");
-    Serial.print("eSteps 2,");
-    Serial.print("eRPMs 2,");
-    Serial.print("eSteps 3,");
-    Serial.print("eRPMs 3,");
-    Serial.print("eSteps 4,");
-    Serial.print("eRPMs 4,");
+      for(int i = 1; i<=USE_MOTORS; i++) {
+        String stepTitle = "eSteps "+i;
+        String rpmTitle = "eRPMs "+i;
+        Serial.print(stepTitle+",");
+        Serial.print(rpmTitle+",");
+      }
   }
   Serial.print("Volts,");
   Serial.println("Amps");
@@ -236,22 +246,13 @@ void mainTest() {
         Serial.print(",");
       }
       if(RUN_RPM_TEST) {
-        Serial.print(stepCount[1]);
-        Serial.print(",");
-        Serial.print(theseRpms[1]);
-        Serial.print(",");
-        Serial.print(stepCount[2]);
-        Serial.print(",");
-        Serial.print(theseRpms[2]);
-        Serial.print(",");
-        Serial.print(stepCount[3]);
-        Serial.print(",");
-        Serial.print(theseRpms[3]);
-        Serial.print(",");
-        Serial.print(stepCount[4]);
-        Serial.print(",");
-        Serial.print(theseRpms[4]);
-        Serial.print(",");
+        
+        for(int i = 1; i<=USE_MOTORS; i++) {
+          Serial.print(stepCount[i]);
+          Serial.print(",");
+          Serial.print(theseRpms[i]);
+          Serial.print(",");
+        }
       }
       Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
       Serial.print(",");
@@ -265,10 +266,27 @@ void mainTest() {
       // 230400 = ~1.5ms cycle
       // All faster bauds = ~1ms cycle
       // minimum looptime is set to 1ms for all higher baud rates.
-      
+  
       int32_t thisDelay;
       uint32_t loopTime = micros() - loopStart;
-      thisDelay = loopDelay - loopTime;
+      if(!loopDelay) {
+        switch(UARTBAUD) {
+        case 115200:
+          thisDelay = (1897 - loopTime);
+          break;
+  
+        case 230400:
+          thisDelay = (1497 - loopTime);
+          break;
+  
+        default:
+          thisDelay = (997 - loopTime);
+          break;
+        }
+      }
+      else {
+        thisDelay = loopDelay - loopTime;
+      }
       if (thisDelay > 0) {
         delayMicroseconds(thisDelay);
       }
@@ -347,7 +365,7 @@ void kvTest() {
     }
 
     // Print out data
-    Serial.print(loopStart-startTime);
+    Serial.print(PriUint64<DEC>(loopStart-startTime));
     Serial.print(",");
     Serial.print(pwm);
     Serial.print(",");
@@ -370,7 +388,7 @@ void kvTest() {
     // minimum looptime is set to 1ms for all higher baud rates.
 
     int32_t thisDelay;
-    uint32_t loopTime = micros() - loopStart;
+    uint64_t loopTime = micros() - loopStart;
     if(!loopDelay) {
       switch(UARTBAUD) {
       case 115200:
@@ -419,14 +437,12 @@ void customTest() {
     Serial.print("Thrust(g),");
   }
   if(RUN_RPM_TEST) {
-    Serial.print("eSteps 1,");
-    Serial.print("eRPMs 1,");
-    Serial.print("eSteps 2,");
-    Serial.print("eRPMs 2,");
-    Serial.print("eSteps 3,");
-    Serial.print("eRPMs 3,");
-    Serial.print("eSteps 4,");
-    Serial.print("eRPMs 4,");
+      for(int i = 1; i<=USE_MOTORS; i++) {
+        String stepTitle = "eSteps "+i;
+        String rpmTitle = "eRPMs "+i;
+        Serial.print(stepTitle+",");
+        Serial.print(rpmTitle+",");
+      }
   }
   Serial.print("Volts,");
   Serial.println("Amps");
@@ -440,13 +456,51 @@ void customTest() {
 
   //setup our ramp
   ramp_init(&r);
-
+  
+  /*
   ramp_add_static(&r, MINCOMMAND, 4000);          // 4 Seconds off
   ramp_add_range(&r, MINCOMMAND, IDLEPWM, 1000);  // Ramp to IDLE for slower startup
   ramp_add_static(&r, IDLEPWM, 10000);            // 10 Seconds at Idle
   ramp_add_static(&r, MAXTHROTTLE, 40000);        // 40 Seconds at Max
   ramp_add_static(&r, IDLEPWM, 10000);            // 10 Seconds at Idle
   ramp_add_static(&r, MINCOMMAND, 5000);          // 5 Seconds off
+  */
+
+  
+  ramp_add_range(&r, MINCOMMAND, IDLEPWM, 500);  // Ramp to IDLE for slower startup
+  ramp_add_static(&r, IDLEPWM, 1000);            // 1 Second at Idle
+  ramp_add_static(&r, 1200, 500);            // 1 Second at 1200
+  ramp_add_static(&r, 1250, 500);            // 1 Second at 1300
+  ramp_add_static(&r, 1200, 500);            // 1 Second at 1200
+  ramp_add_static(&r, IDLEPWM, 1000);         // 1 Second at Idle
+  ramp_add_static(&r, 1300, 500);            
+  ramp_add_static(&r, 1350, 500);            
+  ramp_add_static(&r, 1300, 500);            
+  ramp_add_static(&r, IDLEPWM, 1000);         
+  ramp_add_static(&r, 1400, 500);           
+  ramp_add_static(&r, 1450, 500);           
+  ramp_add_static(&r, 1400, 500);           
+  ramp_add_static(&r, IDLEPWM, 1000);        
+  ramp_add_static(&r, 1500, 500);          
+  ramp_add_static(&r, 1550, 500);          
+  ramp_add_static(&r, 1500, 500);          
+  ramp_add_static(&r, IDLEPWM, 1000);        
+  ramp_add_static(&r, 1600, 500);           
+  ramp_add_static(&r, 1650, 500);           
+  ramp_add_static(&r, 1600, 500);           
+  ramp_add_static(&r, IDLEPWM, 1000);        
+  ramp_add_static(&r, 1700, 500);           
+  ramp_add_static(&r, 1750, 500);           
+  ramp_add_static(&r, 1700, 500);           
+  ramp_add_static(&r, IDLEPWM, 1000);       
+  ramp_add_static(&r, 1800, 500);          
+  ramp_add_static(&r, 1850, 500);          
+  ramp_add_static(&r, 1800, 500);          
+  ramp_add_static(&r, IDLEPWM, 1000);       
+  ramp_add_static(&r, 1900, 500);          
+  ramp_add_static(&r, 1950, 500);    
+  ramp_add_static(&r, 1900, 500);          
+  ramp_add_static(&r, IDLEPWM, 1000);       
 
   prev_pwm = 0;
   
@@ -480,11 +534,11 @@ void customTest() {
     }
 
     
-    int32_t sampleTime = loopStart-startTime;  
+    int64_t sampleTime = loopStart-startTime;  
 
     if(sampleTime >= 0) {
       // Print out data
-      Serial.print(sampleTime);
+      Serial.print(PriUint64<DEC>(sampleTime));
       Serial.print(",");
       Serial.print(pwm);
       Serial.print(",");
@@ -493,22 +547,13 @@ void customTest() {
         Serial.print(",");
       }
       if(RUN_RPM_TEST) {
-        Serial.print(stepCount[1]);
-        Serial.print(",");
-        Serial.print(theseRpms[1]);
-        Serial.print(",");
-        Serial.print(stepCount[2]);
-        Serial.print(",");
-        Serial.print(theseRpms[2]);
-        Serial.print(",");
-        Serial.print(stepCount[3]);
-        Serial.print(",");
-        Serial.print(theseRpms[3]);
-        Serial.print(",");
-        Serial.print(stepCount[4]);
-        Serial.print(",");
-        Serial.print(theseRpms[4]);
-        Serial.print(",");
+        
+        for(int i = 1; i<=USE_MOTORS; i++) {
+          Serial.print(stepCount[i]);
+          Serial.print(",");
+          Serial.print(theseRpms[i]);
+          Serial.print(",");
+        }
       }
       Serial.print(getVoltage(voltageValue)); // Calculate Volts from analog sensor
       Serial.print(",");
@@ -524,7 +569,7 @@ void customTest() {
       // minimum looptime is set to 1ms for all higher baud rates.
   
       int32_t thisDelay;
-      uint32_t loopTime = micros() - loopStart;
+      uint64_t loopTime = micros() - loopStart;
       if(!loopDelay) {
         switch(UARTBAUD) {
         case 115200:

@@ -18,6 +18,7 @@ M4 RPMs                      Pin 35 or PC_6 - I/O BOard B7
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
 */
+#include <PriUint64.h>
 #include "config.h"
 #include "Energia.h"  
 #include "inc/hw_memmap.h" 
@@ -49,9 +50,9 @@ void setup() {
 
   // attach Interupt for RPM sensor
 
-    int rpmPins[] = {32,33,34,35};
+    int rpmPins[] = {31,33,34,35};
     void (*rpmFunctions[4])() {rpmTrigger1,rpmTrigger2,rpmTrigger3,rpmTrigger4};
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < USE_MOTORS; i++) {
       pinMode(rpmPins[i], INPUT_PULLUP);
       attachInterrupt(digitalPinToInterrupt(rpmPins[i]), rpmFunctions[i], FALLING);
     }
@@ -61,15 +62,15 @@ void setup() {
        pwmMultiplier = 4000;  // Standard PWM
        break;
      case 1:
-       pwmMultiplier = 500;  // Oneshot 125
+       pwmMultiplier = 1000;  // Oneshot 125
        break;
        
      case 2: 
-       pwmMultiplier = 168;  // Oneshote 42
+       pwmMultiplier = 336;  // Oneshot 42
        break;
      
      case 3: 
-       pwmMultiplier = 80;   // Multishot
+       pwmMultiplier = 180;   // Multishot
        break;
   }
   
