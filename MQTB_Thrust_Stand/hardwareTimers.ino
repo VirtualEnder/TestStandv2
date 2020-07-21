@@ -51,15 +51,19 @@ void Timer1IntHandler() {
 }
 
 void initPWMOut () { 
-      // Use PWM module
+  
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);      //Enable control of GPIO B
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);      //Enable control of GPIO C
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);      //Enable control of GPIO E
+        
       if(ESCOUTPUT > 4) {
+        
+        // Use PWM module
+      
         if(ESCOUTPUT == 0) {
           SysCtlPWMClockSet( SYSCTL_PWMDIV_2 );
         }
         SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);       //Enable control of PWM module 0
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);      //Enable control of GPIO B
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);      //Enable control of GPIO C
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);      //Enable control of GPIO E
     
         GPIOPinConfigure(GPIO_PB4_M0PWM2);                // Map PB4 to PWM0 G1, OP 2
         GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as PWM
@@ -99,20 +103,81 @@ void initPWMOut () {
         PWMGenEnable(PWM0_BASE, PWM_GEN_2);    //Enable PWM0, G2 */
         PWMGenEnable(PWM0_BASE, PWM_GEN_3);    //Enable PWM0, G3 */
       } else {
+        
+        // Enable GPIO on dshot output pins
+        GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as I/O
+        GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_4);      //Configure PE4 as I/O
+        GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_4);      //Configure PC4 as I/O
+        GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_5);      //Configure PC5 as I/O
 
-        //Set up DSHOT timer and DMA HERE
+        
+        uint32_t dShotPeriod = (SysCtlClockGet()) / ESCRATE;
+        
+        //Set up DSHOT timer and DMA HERE EXAMPLE DMA: https://sites.google.com/site/luiselectronicprojects/tutorials/tiva-tutorials/tiva-dma/blink-with-dma
+        // Set up Timer 3A as dShot Timer
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER3);  
+        TimerConfigure(TIMER3_BASE, TIMER_CFG_PERIODIC);
+
+        TimerLoadSet(TIMER3_BASE, TIMER_A, dShotPeriod-1);
+        
+        TimerIntClear(TIMER3_BASE,TIMER_TIMA_DMA);
+        TimerIntRegister(TIMER3_BASE,TIMER_A,dshotTimer);
+        TimerIntEnable(TIMER3_BASE,TIMER_TIMA_DMA);
+        
+        TimerDMAEventSet(TIMER3_BASE,TIMER_DMA_TIMEOUT_A);
+
+        //Set up DMA
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+        uDMAEnable();
+        uDMAControlBaseSet(DMAcontroltable);
+        
+        //Set the channel trigger to be Timer3A
+        uDMAChannelAssign(UDMA_CH2_TIMER3A);
+        
+        //Disable all the atributes in case any was set
+        uDMAChannelAttributeDisable(UDMA_CH2_TIMER3A,
+        UDMA_ATTR_ALTSELECT | UDMA_ATTR_USEBURST |
+          UDMA_ATTR_HIGH_PRIORITY |
+          UDMA_ATTR_REQMASK);
+      
         /*
-        dshotOutput(dshotUserInputValue, requestTelemetry);
-    
-        if (requestTelemetry) {                
-            requestTelemetry = false;
-            receivedBytes = 0;
-        }*/
+          This sets up the item size to 8bits, source increment to 8bits
+          and destination increment to none and arbitration size to 1
+        */
+        uDMAChannelControlSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
+        UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE |
+          UDMA_ARB_1);
+        
+        /*
+          This will setup the transfer mode to basic, source address to the array we want
+          and destination address to the GPIO state we chosed. It also sets the total transfer
+          size to 16.
+        */
+        uDMAChannelTransferSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
+          UDMA_MODE_BASIC,
+          dshotPacket, (void *)(GPIO_PORTB_BASE + GPIO_PIN_4),
+          16);
+      
+      
+        //Enable the DMA chanel
+        uDMAChannelEnable(UDMA_CH2_TIMER3A);
+
+        TimerEnable(TIMER3_BASE,TIMER_A); 
         
       }
 }
 
 void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
+
+
+                  
+  //Prevent escMicros from overflowing the timer
+  if (pulseWidth > MAXTHROTTLE) 
+    pulseWidth = MAXTHROTTLE;
+  if (pulseWidth < MINCOMMAND)
+    pulseWidth = MINCOMMAND;
+    
+  
   if(ESCOUTPUT < 4) {
     int pwmOutputs[] = {
                     0 ,
@@ -120,12 +185,6 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
                     PWM_OUT_4,
                     PWM_OUT_6,
                     PWM_OUT_7};
-                    
-    //Prevent escMicros from overflowing the timer
-    if (pulseWidth > MAXTHROTTLE) 
-      pulseWidth = MAXTHROTTLE;
-    if (pulseWidth < MINCOMMAND)
-      pulseWidth = MINCOMMAND;
       
     // Convert 1000-2000us range to 125-250us range and apply to PWM output
     uint32_t dutyCycle = (pulseWidth * pwmMultiplier)/100;
@@ -140,7 +199,16 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
         }
     }
   } else {
-     //Update dShot here
+    //Update dShot here
+
+    dshotUserInputValue = map(pulseWidth,1000,2000,dshotmin, dshotmax);
+        
+    dshotOutput(dshotUserInputValue, requestTelemetry);
+
+    if (requestTelemetry) {                
+        requestTelemetry = false;
+        receivedBytes = 0;
+    }
   }
 }
 
@@ -162,4 +230,17 @@ void rpmTimer() {
         stepTime[i]++;
       }
   }
+}
+
+void dshotTimer() {
+  TimerIntClear(TIMER3_BASE,TIMER_TIMA_DMA);
+    
+  //Set again the same source address and destination
+  uDMAChannelTransferSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
+          UDMA_MODE_BASIC,
+          dshotPacket, (void *)(GPIO_PORTB_BASE + GPIO_PIN_4),
+          16);
+  
+  //Always needed since after it's done the DMA is disabled when in basic mode
+  uDMAChannelEnable(UDMA_CH2_TIMER3A);
 }

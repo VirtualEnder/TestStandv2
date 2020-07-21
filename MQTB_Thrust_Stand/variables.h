@@ -5,7 +5,7 @@
 HX711 scale(38, 19);
 
 //dShot hardware serial
-HardwareSerial MySerial(1); //dShot serial
+HardwareSerial tlmSerial(1); //dShot serial
   
 // RPM input variables
 volatile uint32_t stepCount[] = {0,0,0,0,0};
@@ -19,6 +19,21 @@ Average<int> avgStepDiff[] = { 0,
 int theseRpms[5];
 void countRPMs(int inputID = 0);
 
+// The control table used by the uDMA controller.  This table must be aligned
+// to a 1024 byte boundary.
+#if defined(ewarm)
+#pragma data_alignment=1024
+uint8_t DMAcontroltable[1024];
+#elif defined(ccs)
+#pragma DATA_ALIGN(DMAcontroltable, 1024)
+uint8_t DMAcontroltable[1024];
+#else
+uint8_t DMAcontroltable[1024] __attribute__ ((aligned(1024)));
+#endif
+
+//Array to save the Dshot Packet states
+static uint8_t dshotPacket[16];
+
 // dShot variables
 uint8_t receivedBytes = 0;
 volatile bool requestTelemetry = false;
@@ -26,9 +41,6 @@ bool printTelemetry = true;
 uint16_t dshotUserInputValue = 0;
 uint16_t dshotmin = 48;
 uint16_t dshotmax = 2047;
-uint16_t dshotidle = dshotmin + round(3.5*(dshotmax-dshotmin)/100); // 3.5%
-uint16_t dshot50 =   dshotmin + round(50*(dshotmax-dshotmin)/100); // 50%
-uint16_t dshot75 =   dshotmin + round(75*(dshotmax-dshotmin)/100); // 75%
 int16_t ESC_telemetry[5]; // Temperature, Voltage, Current, used mAh, eRpM
 
 //dShot telemetry variables

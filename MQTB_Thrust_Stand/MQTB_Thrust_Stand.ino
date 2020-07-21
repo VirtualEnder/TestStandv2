@@ -18,8 +18,6 @@ M4 RPMs                      Pin 35 or PC_6 - I/O BOard B7
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
 */
-#include <PriUint64.h>
-#include <HardwareSerial.h>
 #include "config.h"
 #include "Energia.h"  
 #include "inc/hw_memmap.h" 
@@ -36,10 +34,12 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h"
 #include "driverlib/pwm.h" 
-#include "driverlib/udma.
+#include "driverlib/udma.h"
 #include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
+#include <PriUint64.h>
+#include <HardwareSerial.h>
 #include "variables.h"
 #include "ramp.h"
 
@@ -49,7 +49,9 @@ void setup() {
 
   // initialize serial communication:
   Serial.begin(UARTBAUD);
+  tlmSerial.begin(115200); //, SERIAL_8N1, 16, 17);
 
+  
   // attach Interupt for RPM sensor
 
     int rpmPins[] = {31,33,34,35};

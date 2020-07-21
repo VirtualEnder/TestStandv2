@@ -2,8 +2,8 @@
 void receiveTelemtry(){
     static uint8_t SerialBuf[10];
 
-        if(MySerial.available()){
-            SerialBuf[receivedBytes] = MySerial.read();
+        if(tlmSerial.available()){
+            SerialBuf[receivedBytes] = tlmSerial.read();
             receivedBytes++;
         }
 
@@ -15,8 +15,8 @@ void receiveTelemtry(){
 //                Serial.println("CRC transmission failure");
                 
                 // Empty Rx Serial of garbage telemtry
-                while(MySerial.available())
-                    MySerial.read();
+                while(tlmSerial.available())
+                    tlmSerial.read();
                 
                 requestTelemetry = true;
             
@@ -127,6 +127,15 @@ void dshotOutput(uint16_t value, bool telemetry) {
     }
     
     //WRITE DMA packet Dshot output HERE
+
+      //Set again the same source address and destination
+    uDMAChannelTransferSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
+            UDMA_MODE_BASIC,
+            dshotPacket, (void *)(GPIO_PORTB_BASE + GPIO_PIN_4),
+            16);
+    
+    //Always needed since after it's done the DMA is disabled when in basic mode
+    uDMAChannelEnable(UDMA_CH2_TIMER3A);
     
     return;
 
