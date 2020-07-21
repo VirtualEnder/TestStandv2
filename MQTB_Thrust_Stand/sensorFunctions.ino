@@ -45,7 +45,7 @@ int calculateRPMs (int thisTime, int inputID = 1 ,boolean useAverage = true) {
     if(USEAVG && useAverage) {
       thisTime = avgStepDiff[inputID].rolling(thisTime);
     }
-    int outRPMs = (120000000/(thisTime*POLES));
+    int outRPMs = (120000000/(thisTime*MOTOR_POLES));
     if(outRPMs < 52000 && outRPMs > 600)
       last_ret = outRPMs;
   }
@@ -68,5 +68,5 @@ int averageRPMs() {
       result += step_times[1][i];
     }
   }
-  return (120000000/result*POLES);
+  return (120000000/result*MOTOR_POLES);
 }

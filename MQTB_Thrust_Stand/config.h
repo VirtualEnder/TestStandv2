@@ -6,13 +6,13 @@
 #define RUN_RPM_TEST true    // Run RPM test
 
 // Rates
-#define UARTBAUD 921600     // UART Baud rate (DO NOT set to less than 115200)
+#define UARTBAUD 2000000     // UART Baud rate (DO NOT set to less than 115200)
 #define SENSORRATE  250     // Refresh rate in HZ of load cell and analog read timer.
 #define ESCRATE    8000     // PWM update rate for ESC in HZ
-#define PWMSCALE      3     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot
+#define ESCOUTPUT      3     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot, 4 - dShot
 
 // Sensor and Motor configuration
-#define POLES        14     // Number of magnetic poles in test motor.
+#define MOTOR_POLES        14     // Number of magnetic poles in test motor.
 
 //RPM calculation configuration
 #define USEAVG     true     // Use averaging on RPM calculations
@@ -22,7 +22,7 @@
 // Test Range
 #define MINTHROTTLE 1030   // Low end of ESC calibrated range
 #define MAXTHROTTLE 2000   // High end of ESC calibrated range
-#define MINCOMMAND  1000   // Value sent to ESC when test isn't running.
+#define MINCOMMAND  900   // Value sent to ESC when test isn't running.
 #define IDLEPWM     1100   // PWM sent during the idle routine
 
 

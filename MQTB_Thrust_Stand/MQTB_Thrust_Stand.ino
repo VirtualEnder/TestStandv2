@@ -19,6 +19,7 @@ Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-la
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
 */
 #include <PriUint64.h>
+#include <HardwareSerial.h>
 #include "config.h"
 #include "Energia.h"  
 #include "inc/hw_memmap.h" 
@@ -35,6 +36,7 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h"
 #include "driverlib/pwm.h" 
+#include "driverlib/udma.
 #include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
@@ -57,7 +59,7 @@ void setup() {
       attachInterrupt(digitalPinToInterrupt(rpmPins[i]), rpmFunctions[i], FALLING);
     }
 
-  switch (PWMSCALE) {
+  switch (ESCOUTPUT) {
      case 0:
        pwmMultiplier = 4000;  // Standard PWM
        break;
@@ -73,7 +75,6 @@ void setup() {
        pwmMultiplier = 180;   // Multishot
        break;
   }
-  
   
   if(USE_LOAD_CELL) {
     scale.set_scale(LSCALE);  // Eventually set this via EEPROM
