@@ -111,14 +111,13 @@ void initPWMOut () {
         GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_5);      //Configure PC5 as I/O
 
         
-        uint32_t dShotPeriod = (SysCtlClockGet()) / ESCRATE;
         
         //Set up DSHOT timer and DMA HERE EXAMPLE DMA: https://sites.google.com/site/luiselectronicprojects/tutorials/tiva-tutorials/tiva-dma/blink-with-dma
         // Set up Timer 3A as dShot Timer
         SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER3);  
         TimerConfigure(TIMER3_BASE, TIMER_CFG_PERIODIC);
 
-        TimerLoadSet(TIMER3_BASE, TIMER_A, dShotPeriod-1);
+        TimerLoadSet(TIMER3_BASE, TIMER_A, 1);
         
         TimerIntClear(TIMER3_BASE,TIMER_TIMA_DMA);
         TimerIntRegister(TIMER3_BASE,TIMER_A,dshotTimer);
@@ -141,11 +140,11 @@ void initPWMOut () {
           UDMA_ATTR_REQMASK);
       
         /*
-          This sets up the item size to 8bits, source increment to 8bits
+          This sets up the item size to 16bits, source increment to 16bits
           and destination increment to none and arbitration size to 1
         */
         uDMAChannelControlSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
-        UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE |
+        UDMA_SIZE_16 | UDMA_SRC_INC_16 | UDMA_DST_INC_NONE |
           UDMA_ARB_1);
         
         /*
@@ -201,7 +200,7 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
   } else {
     //Update dShot here
 
-    dshotUserInputValue = map(pulseWidth,1000,2000,dshotmin, dshotmax);
+    dshotUserInputValue = map(pulseWidth,1000,2000,0, 2048);
         
     dshotOutput(dshotUserInputValue, requestTelemetry);
 

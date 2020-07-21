@@ -2,6 +2,9 @@
 void receiveTelemtry(){
     static uint8_t SerialBuf[10];
 
+        uint32_t dshotmin = map(MINTHROTTLE, 1000,2000,0,2048);
+        uint32_t dshotmax = map(MAXTHROTTLE, 1000,2000,0,2048);
+
         if(tlmSerial.available()){
             SerialBuf[receivedBytes] = tlmSerial.read();
             receivedBytes++;
@@ -117,25 +120,28 @@ void dshotOutput(uint16_t value, bool telemetry) {
     // Bit length (total timing period) is 1.67 microseconds (T0H + T0L or T1H + T1L).
     // For a bit to be 1, the pulse width is 1250 nanoseconds (T1H – time the pulse is high for a bit value of ONE)
     // For a bit to be 0, the pulse width is 625 nanoseconds (T0H – time the pulse is high for a bit value of ZERO)
+    
+    uint8_t highSteps = 0;
+    
     for (int i = 0; i < 16; i++) {
+        dshotPacket[i] = 0;
         if (packet & 0x8000) {
-              // DMA construct packet
+              // construct packet 1
+              highSteps = 100;
           } else {
-              // DMA construct packet
+              // construct packet 0
+              highSteps = 50;
           }
+        // Write dShot Packet
+        for(int j = 0; j <= 134; j++) {
+          if (j <= highSteps) {
+            dshotPacket[i] << 1 | 1;
+          } else {
+            dshotPacket[i] << 1 | 0;
+          }
+        } 
         packet <<= 1;
     }
-    
-    //WRITE DMA packet Dshot output HERE
-
-      //Set again the same source address and destination
-    uDMAChannelTransferSet(UDMA_CH2_TIMER3A | UDMA_PRI_SELECT,
-            UDMA_MODE_BASIC,
-            dshotPacket, (void *)(GPIO_PORTB_BASE + GPIO_PIN_4),
-            16);
-    
-    //Always needed since after it's done the DMA is disabled when in basic mode
-    uDMAChannelEnable(UDMA_CH2_TIMER3A);
     
     return;
 

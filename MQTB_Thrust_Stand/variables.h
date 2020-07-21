@@ -39,8 +39,6 @@ uint8_t receivedBytes = 0;
 volatile bool requestTelemetry = false;
 bool printTelemetry = true;
 uint16_t dshotUserInputValue = 0;
-uint16_t dshotmin = 48;
-uint16_t dshotmax = 2047;
 int16_t ESC_telemetry[5]; // Temperature, Voltage, Current, used mAh, eRpM
 
 //dShot telemetry variables
