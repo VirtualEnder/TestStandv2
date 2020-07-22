@@ -31,18 +31,18 @@ uint8_t DMAcontroltable[1024];
 uint8_t DMAcontroltable[1024] __attribute__ ((aligned(1024)));
 #endif
 
-//Array to save the Dshot Packet states
-static uint8_t dshotPacket[16];
-
 // dShot variables
 uint8_t receivedBytes = 0;
 volatile bool requestTelemetry = false;
 bool printTelemetry = true;
 uint16_t dshotUserInputValue = 0;
-int16_t ESC_telemetry[5]; // Temperature, Voltage, Current, used mAh, eRpM
+static uint8_t dshotPacket[17];  //Array to save the Dshot Packet states
+bool dShotWriteActive = false;
+uint8_t dShotBitStep = 0;
 
 //dShot telemetry variables
 
+int16_t ESC_telemetry[5]; // Temperature, Voltage, Current, used mAh, eRpM
 uint32_t currentTime;
 uint8_t temperature = 0;
 uint8_t temperatureMax = 0;
@@ -66,6 +66,13 @@ volatile int thrust = 0;
 
 //PWM Output Variables
 void updatePWM(unsigned pulseWidth, unsigned pwmOutput = 0);
+
+int pwmOutputs[] = {
+                0 ,
+                PWM_OUT_2,
+                PWM_OUT_4,
+                PWM_OUT_6,
+                PWM_OUT_7};
 
 
 // Misc Variables

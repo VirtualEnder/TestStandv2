@@ -34,7 +34,6 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "driverlib/rom.h"
 #include "driverlib/timer.h"
 #include "driverlib/pwm.h" 
-#include "driverlib/udma.h"
 #include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
@@ -49,7 +48,7 @@ void setup() {
 
   // initialize serial communication:
   Serial.begin(UARTBAUD);
-  tlmSerial.begin(115200); //, SERIAL_8N1, 16, 17);
+  //tlmSerial.begin(115200); //, SERIAL_8N1, 16, 17);
 
   
   // attach Interupt for RPM sensor

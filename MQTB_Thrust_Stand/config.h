@@ -1,15 +1,15 @@
 
 // Configuration options
-#define PART_TM4C123GH6PM    // Set board type to TivaC instead of Stellaris
-#define USE_LOAD_CELL true   // Set load cell availability
-#define USE_MOTORS 1         // Number of motors to use in test
-#define RUN_RPM_TEST true    // Run RPM test
+#define PART_TM4C123GH6PM        // Set board type to TivaC instead of Stellaris
+#define USE_LOAD_CELL     true   // Set load cell availability
+#define USE_MOTORS           1   // Number of motors to use in test
+#define RUN_RPM_TEST      true   // Run RPM test
 
 // Rates
 #define UARTBAUD 2000000     // UART Baud rate (DO NOT set to less than 115200)
 #define SENSORRATE   250     // Refresh rate in HZ of load cell and analog read timer.
 #define ESCRATE     8000     // PWM update rate for ESC in HZ
-#define ESCOUTPUT      3     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot, 4 - dShot
+#define ESCOUTPUT      4     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot, 4 - dShot
 
 // Sensor and Motor configuration
 #define MOTOR_POLES        14     // Number of magnetic poles in test motor.

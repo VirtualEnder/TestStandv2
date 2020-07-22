@@ -1,4 +1,4 @@
-
+/*
 void receiveTelemtry(){
     static uint8_t SerialBuf[10];
 
@@ -53,7 +53,7 @@ void receiveTelemtry(){
                 // Thrust
                 Serial.println(thrust);
             }
-          */
+          //
             temperature = 0.9*temperature + 0.1*ESC_telemetry[0];
             if (temperature > temperatureMax) {
                 temperatureMax = temperature;
@@ -93,7 +93,7 @@ void receiveTelemtry(){
   return;
   
 }
-
+*/
 void dshotOutput(uint16_t value, bool telemetry) {
     
     uint16_t packet;
@@ -122,28 +122,23 @@ void dshotOutput(uint16_t value, bool telemetry) {
     // For a bit to be 0, the pulse width is 625 nanoseconds (T0H – time the pulse is high for a bit value of ZERO)
     
     uint8_t highSteps = 0;
-    
-    for (int i = 0; i < 16; i++) {
-        dshotPacket[i] = 0;
+    while(dShotWriteActive == true){}   // Wait for dshot to finish writing
+    for (int i = 0; i < 17; i++) {
+      dshotPacket[i] = 0;
+      
+      if(i < 16) {
         if (packet & 0x8000) {
-              // construct packet 1
-              highSteps = 100;
-          } else {
-              // construct packet 0
-              highSteps = 50;
-          }
-        // Write dShot Packet
-        for(int j = 0; j <= 134; j++) {
-          if (j <= highSteps) {
-            dshotPacket[i] << 1 | 1;
-          } else {
-            dshotPacket[i] << 1 | 0;
-          }
-        } 
+            // construct packet 1
+            highSteps = 100;
+        } else {
+            // construct packet 0
+            highSteps = 50;
+        }
+        dshotPacket[i]=highSteps;
         packet <<= 1;
+      }
     }
-    
-    return;
+   return;
 
 }
 
