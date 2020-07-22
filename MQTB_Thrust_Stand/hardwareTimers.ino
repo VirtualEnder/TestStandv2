@@ -62,17 +62,21 @@ void initPWMOut () {
       } else if (ESCOUTPUT < 4) {
         PWMPeriod = (SysCtlClockGet()) / ESCRATE;
       } else {
-        PWMPeriod = 133;
+        PWMPeriod = 134;
       }
       
       SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);       //Enable control of PWM module 0
+      SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
       
       SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);      //Enable control of GPIO B
       SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);      //Enable control of GPIO C
       SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);      //Enable control of GPIO E
 
-      GPIOPinConfigure(GPIO_PB4_M0PWM2);                // Map PB4 to PWM0 G1, OP 2
-      GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as PWM
+      GPIOPinConfigure(GPIO_PB4_T1CCP0);                // Map PB4 to PWM0 G1, OP 2
+      GPIOPinTypeTimer(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as PWM
+
+      //GPIOPinConfigure(GPIO_PB4_M0PWM2);                // Map PB4 to PWM0 G1, OP 2 
+      //GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_4);      //Configure PB4 as PWM
 
       GPIOPinConfigure(GPIO_PE4_M0PWM4);                // Map PE4 to PWM0 G2, OP 4
       GPIOPinTypePWM(GPIO_PORTE_BASE, GPIO_PIN_4);      //Configure PE4 as PWM
@@ -83,32 +87,36 @@ void initPWMOut () {
       GPIOPinConfigure(GPIO_PC5_M0PWM7);                // Map PC5 to PWM0 G3, OP 7
       GPIOPinTypePWM(GPIO_PORTC_BASE, GPIO_PIN_5);      //Configure PC5 as PWM
       
-      PWMGenConfigure(PWM0_BASE, PWM_GEN_1, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
-      PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
-      PWMGenConfigure(PWM0_BASE, PWM_GEN_3, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
-                
-      PWMGenPeriodSet(PWM0_BASE, PWM_GEN_1, PWMPeriod - 1);    //Set period of PWM0 G1
+      TimerConfigure(TIMER1_BASE, TIMER_CFG_A_PWM|TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PERIODIC_UP);
+      TimerControlLevel(TIMER1_BASE, TIMER_A, true);
+      //PWMGenConfigure(PWM0_BASE, PWM_GEN_1, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
+      PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
+      PWMGenConfigure(PWM0_BASE, PWM_GEN_3, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_SYNC);    //Configure PWM0 G0 as UP/DOWN counter with no sync of updates
+
+      TimerLoadSet(TIMER1_BASE, TIMER_A, PWMPeriod - 1);
+      //PWMGenPeriodSet(PWM0_BASE, PWM_GEN_1, PWMPeriod - 1);    //Set period of PWM0 G1
       PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, PWMPeriod - 1);    //Set period of PWM0 G2
       PWMGenPeriodSet(PWM0_BASE, PWM_GEN_3, PWMPeriod - 1);    //Set period of PWM0 G2
       
       updatePWM(MINCOMMAND);
       
-      PWMOutputState(PWM0_BASE, PWM_OUT_2_BIT , true);    //Enable OP 2 on PWM0 G1
+      //PWMOutputState(PWM0_BASE, PWM_OUT_2_BIT , true);    //Enable OP 2 on PWM0 G1
       PWMOutputState(PWM0_BASE, PWM_OUT_4_BIT , true);    //Enable OP 2 on PWM0 G1
       PWMOutputState(PWM0_BASE, PWM_OUT_6_BIT , true);    //Enable OP 2 on PWM0 G1
       PWMOutputState(PWM0_BASE, PWM_OUT_7_BIT , true);    //Enable OP 2 on PWM0 G1
-      
-      PWMGenEnable(PWM0_BASE, PWM_GEN_1);    //Enable PWM0, G1 */
+
+      TimerEnable(TIMER1_BASE, TIMER_A);
+      //PWMGenEnable(PWM0_BASE, PWM_GEN_1);    //Enable PWM0, G1 */
       PWMGenEnable(PWM0_BASE, PWM_GEN_2);    //Enable PWM0, G2 */
       PWMGenEnable(PWM0_BASE, PWM_GEN_3);    //Enable PWM0, G3 */
         
       if(ESCOUTPUT == 4) {
         
-        for(int i = 1; i<=USE_MOTORS; i++) {
-          PWMPulseWidthSet(PWM0_BASE, pwmOutputs[i], 0);    //Set duty cycle of pwm output
-        }       
+        //for(int i = 1; i<=USE_MOTORS; i++) {
+        //  PWMPulseWidthSet(PWM0_BASE, pwmOutputs[i], 0);    //Set duty cycle of pwm output
+        //}       
 
-
+        TimerMatchSet(TIMER1_BASE, TIMER_A, 0);
 
         
         // Set up Timer 5A as dShot Trigger
@@ -124,18 +132,18 @@ void initPWMOut () {
 
         TimerEnable(TIMER3_BASE,TIMER_A); 
         
-        // Set up Timer 5A as dShot Output Timer
+        // Set up Timer 4A as dShot Output Timer
         SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER4);  
         TimerConfigure(TIMER4_BASE, TIMER_CFG_PERIODIC);
       
-        TimerLoadSet(TIMER4_BASE, TIMER_A, 133);
+        TimerLoadSet(TIMER4_BASE, TIMER_A, PWMPeriod - 1);
         
         TimerIntClear(TIMER4_BASE,TIMER_TIMA_TIMEOUT);
         TimerIntRegister(TIMER4_BASE,TIMER_A,dshotTimer);
         
-        // Don't enable timer till trigger.       
-        //TimerIntEnable(TIMER4_BASE,TIMER_TIMA_TIMEOUT);
-        //TimerEnable(TIMER4_BASE,TIMER_A); 
+        // Don't enable timer till trigger. 
+
+        TimerSynchronize(TIMER1_BASE,TIMER_4A_SYNC|TIMER_1A_SYNC);
       }
   
 }
@@ -216,7 +224,7 @@ void dshotTimer() {
   TimerIntClear(TIMER4_BASE, TIMER_TIMA_TIMEOUT);
   
   //for(int i = 1; i<=USE_MOTORS; i++) {
-    PWMPulseWidthSet(PWM0_BASE, pwmOutputs[1], dshotPacket[dShotBitStep]);    //Set duty cycle of pwm output
+     TimerMatchSet(TIMER1_BASE, TIMER_A, dshotPacket[dShotBitStep]);    //Set duty cycle of pwm output
   //}
   if(dShotBitStep < 17) {
     dShotBitStep++;

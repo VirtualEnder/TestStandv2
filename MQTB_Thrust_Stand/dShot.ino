@@ -134,7 +134,7 @@ void dshotOutput(uint16_t value, bool telemetry) {
             // construct packet 0
             highSteps = 50;
         }
-        dshotPacket[i]=highSteps;
+        dshotPacket[i]= highSteps;
         packet <<= 1;
       }
     }
