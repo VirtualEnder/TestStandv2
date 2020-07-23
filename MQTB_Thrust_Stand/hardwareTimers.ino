@@ -18,17 +18,17 @@ void adcTimer (unsigned Hz) {
   ADCSequenceEnable(ADC0_BASE, 0);
   ADCIntClear(ADC0_BASE, 0);
   
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);  
-  TimerConfigure(TIMER1_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PERIODIC); 
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER5);  
+  TimerConfigure(TIMER5_BASE, TIMER_CFG_SPLIT_PAIR|TIMER_CFG_A_PERIODIC); 
   uint64_t ulPeriod = (SysCtlClockGet () / Hz);
-  TimerLoadSet(TIMER1_BASE, TIMER_A, ulPeriod -1); 
-  IntEnable(INT_TIMER1A); 
-  TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT); 
-  TimerIntRegister(TIMER1_BASE, TIMER_A, Timer1IntHandler); 
-  TimerEnable(TIMER1_BASE, TIMER_A); 
+  TimerLoadSet(TIMER5_BASE, TIMER_A, ulPeriod -1); 
+  IntEnable(INT_TIMER5A); 
+  TimerIntEnable(TIMER5_BASE, TIMER_TIMA_TIMEOUT); 
+  TimerIntRegister(TIMER5_BASE, TIMER_A, adcIntHandler); 
+  TimerEnable(TIMER5_BASE, TIMER_A); 
 }
 
-void Timer1IntHandler() {
+void adcIntHandler() {
   TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
     if(ADCIntStatus(ADC0_BASE, 0, false)){
