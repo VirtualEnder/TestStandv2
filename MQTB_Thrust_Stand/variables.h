@@ -36,9 +36,8 @@ uint8_t receivedBytes = 0;
 volatile bool requestTelemetry = false;
 bool printTelemetry = true;
 uint16_t dshotUserInputValue = 0;
-static uint8_t dshotPacket[17];  //Array to save the Dshot Packet states
+static uint8_t dshotPacket[16];  //Array to save the Dshot Packet states
 bool dShotWriteActive = false;
-uint8_t dShotBitStep = 0;
 
 //dShot telemetry variables
 

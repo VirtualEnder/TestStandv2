@@ -121,20 +121,20 @@ void dshotOutput(uint16_t value, bool telemetry) {
     // For a bit to be 1, the pulse width is 1250 nanoseconds (T1H – time the pulse is high for a bit value of ONE)
     // For a bit to be 0, the pulse width is 625 nanoseconds (T0H – time the pulse is high for a bit value of ZERO)
     
-    uint8_t highSteps = 0;
+    uint16_t steps = 0;
     while(dShotWriteActive == true){}   // Wait for dshot to finish writing
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i < 16; i++) {
       dshotPacket[i] = 0;
       
       if(i < 16) {
         if (packet & 0x8000) {
             // construct packet 1
-            highSteps = 100;
+            steps = 0x03f8;          //  11.1111.1000
         } else {
             // construct packet 0
-            highSteps = 50;
+            steps = 0x03c0;          //  11.1100.0000
         }
-        dshotPacket[i]= highSteps;
+        dshotPacket[i]= steps;
         packet <<= 1;
       }
     }

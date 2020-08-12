@@ -24,16 +24,21 @@ Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris
 #include "inc/hw_types.h" 
 #include "inc/hw_ints.h" 
 #include "inc/hw_timer.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_ssi.h"
 #include "driverlib/fpu.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/Debug.h" 
 #include "driverlib/interrupt.h" 
 #include "driverlib/sysctl.h" 
+#include "driverlib/systick.h"
 #include "driverlib/adc.h"
 #include "driverlib/rom.h"
 #include "driverlib/timer.h"
 #include "driverlib/pwm.h" 
+#include "driverlib/udma.h"
+#include "driverlib/ssi.h"
 #include "HX711.h"             // Requires HX711 Library from: https://github.com/bogde/HX711
 #include "Average.h"           // Requires Average Library from: https://github.com/MajenkoLibraries/Average
 #include <EEPROM.h>
