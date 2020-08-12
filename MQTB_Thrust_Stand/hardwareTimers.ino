@@ -148,7 +148,7 @@ void initPWMOut () {
         //
         uDMAChannelControlSet(UDMA_CHANNEL_SSI2TX | UDMA_PRI_SELECT,
                                   UDMA_SIZE_16 | UDMA_SRC_INC_16 | UDMA_DST_INC_NONE |
-                                  UDMA_ARB_4);
+                                  UDMA_ARB_16);
     
     
         //
