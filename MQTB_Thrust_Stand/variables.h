@@ -19,24 +19,12 @@ Average<int> avgStepDiff[] = { 0,
 int theseRpms[5];
 void countRPMs(int inputID = 0);
 
-// The control table used by the uDMA controller.  This table must be aligned
-// to a 1024 byte boundary.
-#if defined(ewarm)
-#pragma data_alignment=1024
-uint8_t DMAcontroltable[1024];
-#elif defined(ccs)
-#pragma DATA_ALIGN(DMAcontroltable, 1024)
-uint8_t DMAcontroltable[1024];
-#else
-uint8_t DMAcontroltable[1024] __attribute__ ((aligned(1024)));
-#endif
-
 // dShot variables
 uint8_t receivedBytes = 0;
 volatile bool requestTelemetry = false;
 bool printTelemetry = true;
 uint16_t dshotUserInputValue = 0;
-static uint8_t dshotPacket[16];  //Array to save the Dshot Packet states
+static uint16_t dshotPacket[16];  //Array to save the Dshot Packet states
 bool dShotWriteActive = false;
 
 //dShot telemetry variables
