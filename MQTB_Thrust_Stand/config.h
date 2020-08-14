@@ -9,8 +9,8 @@
 // Rates
 #define UARTBAUD 2000000     // UART Baud rate (DO NOT set to less than 115200)
 #define SENSORRATE   250     // Refresh rate in HZ of load cell and analog read timer.
-#define ESCRATE     8000     // PWM update rate for ESC in HZ
-#define ESCOUTPUT      3     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot, 4 - dShot
+#define ESCRATE     1000     // PWM update rate for ESC in HZ
+#define ESCOUTPUT      4     // Type of PWM signal: 0 - Standard PWM 1 - Oneshot125, 2 - Oneshot42, 3 - MultiShot, 4 - dShot
 
 // Sensor and Motor configuration
 #define MOTOR_POLES        14     // Number of magnetic poles in test motor.

@@ -130,10 +130,10 @@ void dshotOutput(uint16_t value, bool telemetry) {
       if(i < 16) {
         if (packet & 0x8000) {
             // construct packet 1
-            steps = 0x03f8;          //  11.1111.1000
+            steps = 0xFFF8;          //  1111111111111000
         } else {
             // construct packet 0
-            steps = 0x03c0;          //  11.1100.0000
+            steps = 0xFE00;          //  1111111100000000
         }
         dshotPacket[i]= steps;
         packet <<= 1;

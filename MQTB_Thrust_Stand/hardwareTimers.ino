@@ -120,67 +120,10 @@ void initPWMOut () {
         GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_7);
     
         SSIConfigSetExpClk(SSI2_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-                SSI_MODE_MASTER, 6000000, 10);
+                SSI_MODE_MASTER, 10000000, 15);
     
         SSIEnable(SSI2_BASE);
-
-        //****************************************************************************
-        //uDMA SSI2 TX
-        //****************************************************************************
-    
-        //
-        // Put the attributes in a known state for the uDMA SSI2TX channel.  These
-        // should already be disabled by default.
-        //
-        uDMAChannelAttributeDisable(UDMA_CHANNEL_SSI2TX,
-                                        UDMA_ATTR_ALTSELECT |
-                                        UDMA_ATTR_HIGH_PRIORITY |
-                                        UDMA_ATTR_REQMASK);
-    
-        //
-        // Set the USEBURST attribute for the uDMA SSI2TX channel.  This will
-        // force the controller to always use a burst when transferring data from
-        // the TX buffer to the SSI0.  This is somewhat more effecient bus usage
-        // than the default which allows single or burst transfers.
-        //
-        uDMAChannelAttributeEnable(UDMA_CHANNEL_SSI2TX, UDMA_ATTR_USEBURST);
-    
-        //
-        // Configure the control parameters for the SSI2 TX.
-        //
-        uDMAChannelControlSet(UDMA_CHANNEL_SSI2TX | UDMA_PRI_SELECT,
-                                  UDMA_SIZE_16 | UDMA_SRC_INC_16 | UDMA_DST_INC_NONE |
-                                  UDMA_ARB_16);
-    
-    
-        //
-        // Set up the transfer parameters for the uDMA SSI2 TX channel.  This will
-        // configure the transfer source and destination and the transfer size.
-        // Basic mode is used because the peripheral is making the uDMA transfer
-        // request.  The source is the TX buffer and the destination is the SSI2
-        // data register.
-        //
-        uDMAChannelTransferSet(UDMA_CHANNEL_SSI2TX | UDMA_PRI_SELECT,
-                                                       UDMA_MODE_BASIC, dshotPacket,
-                                                       (void *)(SSI2_BASE + SSI_O_DR),
-                                                       16);
-    
-        //
-        // Now the uDMA SSI2 TX channel is primed to start a
-        // transfer.  As soon as the channel is enabled, the peripheral will
-        // issue a transfer request and the data transfer will begin.
-        //
-        uDMAChannelEnable(UDMA_CHANNEL_SSI2TX);
-    
-        //
-        // Enable the SSI2 DMA TX/RX interrupts.
-        //
-        SSIIntEnable(SSI2_BASE, SSI_DMATX);
-    
-        //
-        // Enable the SSI2 peripheral interrupts.
-        //
-        IntEnable(INT_SSI2);
+        
         
         // Set up Timer 3A as dShot Trigger
         SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER3);  
@@ -194,6 +137,7 @@ void initPWMOut () {
         TimerIntEnable(TIMER3_BASE,TIMER_TIMA_TIMEOUT);
 
         TimerEnable(TIMER3_BASE,TIMER_A); 
+
         
       }
   
@@ -213,7 +157,7 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
     // Convert 1000-2000us range to 125-250us range and apply to PWM output
     uint32_t dutyCycle = (pulseWidth * pwmMultiplier)/100;
     if(ESCOUTPUT == 3) {
-      dutyCycle -= 1350;
+      dutyCycle -= 1230;
     }
     if(pwmOutput > 0) {
       PWMPulseWidthSet(PWM0_BASE, pwmOutputs[pwmOutput], dutyCycle);    //Set duty cycle of pwm output
@@ -225,8 +169,11 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
     
   } else {
     //Update dShot here
-
-    dshotUserInputValue = map(pulseWidth,1000,2000,0, 2048);
+    if(pulseWidth == MINCOMMAND) {
+      dshotUserInputValue = 0;
+    } else {
+      dshotUserInputValue = map(pulseWidth,1000,2000,48, 2048);
+    }
     if(dshotUserInputValue < 48 && dshotUserInputValue != 0) {
       dshotUserInputValue = 48;
     }
@@ -265,8 +212,46 @@ void executeDshot() {
 
 
   // Reset variables
-  dShotWriteActive = true;     
-  
+  dShotWriteActive = true;    
+
+  bool bIntsOff;
+  //
+  // Turn interrupts off temporarily.
+  //
+  bIntsOff = IntMasterDisable();
+
+
+  //
+  // Send the array 16 dshot bits = one dshot frame
+  //
+
+  for(uint32_t ui32Index = 0; ui32Index < 16; ui32Index++)
+  {
+      //
+      // Send the data using the "blocking" put function.  This function
+      // will wait until there is room in the send FIFO before returning.
+      // This allows you to assure that all the data you send makes it into
+      // the send FIFO.
+      //
+      SSIDataPut(SSI2_BASE, dshotPacket[ui32Index]);
+  }
+
+  //
+  // Wait until SSI0 is done transferring all the data in the transmit FIFO.
+  //
+  while(SSIBusy(SSI2_BASE))
+  {
+  }
+
+
+  //
+  // Restore the interrupt state
+  //
+  if(!bIntsOff)
+  {
+      IntMasterEnable();
+  }
+  /*
   //Execute Dshot Packet Transmission here.
   uDMAChannelTransferSet(UDMA_CHANNEL_SSI2TX | UDMA_PRI_SELECT,
                          UDMA_MODE_BASIC, dshotPacket,
@@ -279,7 +264,7 @@ void executeDshot() {
   // issue a transfer request and the data transfer will begin.
   //
   uDMAChannelEnable(UDMA_CHANNEL_SSI2TX);
-  
+  */
   dShotWriteActive = false;    
   
 }

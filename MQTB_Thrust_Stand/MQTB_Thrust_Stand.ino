@@ -78,7 +78,7 @@ void setup() {
        break;
      
      case 3: 
-       pwmMultiplier = 180;   // Multishot
+       pwmMultiplier = 160;   // Multishot
        break;
   }
   
