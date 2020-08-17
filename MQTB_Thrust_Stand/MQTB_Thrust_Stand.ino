@@ -6,6 +6,7 @@ PWM Output:                  Pin 2 or PE_4 - I/O Board A4
 PWM Output:                  Pin 7 or PB_4 - I/O Board A5
 PWM Output:                  Pin 5 or PC_4 - I/O Board B2
 PWM Output:                  Pin 6 or PC_5 - I/O Board B3
+DShot Output:                Pin   or PA_5 - I/O Board B8
 Voltage Sensor:              Pin 27 or PE_1 - I/O Board AY
 Current Sensor:              Pin 28 or PE_2 - I/O Board AX
 Load Cell Amp HX711.DOUT     Pin 38 or PB_3 - I/O Board A6

@@ -108,21 +108,22 @@ void initPWMOut () {
           PWMPulseWidthSet(PWM0_BASE, pwmOutputs[i], 0);    //turn off PWM outputs
         }       
 
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
-        while(!SysCtlPeripheralReady(SYSCTL_PERIPH_SSI2)){}
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);      //Enable control of GPIO A
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
+        while(!SysCtlPeripheralReady(SYSCTL_PERIPH_SSI0)){}
         
-        SysCtlPeripheralSleepEnable(SYSCTL_PERIPH_SSI2);
+        SysCtlPeripheralSleepEnable(SYSCTL_PERIPH_SSI0);
         
         //
         // Configure GPIO Pins for SSI2 mode.
         //
-        GPIOPinConfigure(GPIO_PB7_SSI2TX);
-        GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_7);
+        GPIOPinConfigure(GPIO_PA5_SSI0TX);
+        GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5);
     
-        SSIConfigSetExpClk(SSI2_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
+        SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
                 SSI_MODE_MASTER, 10000000, 15);
     
-        SSIEnable(SSI2_BASE);
+        SSIEnable(SSI0_BASE);
         
         
         // Set up Timer 3A as dShot Trigger
@@ -233,13 +234,13 @@ void executeDshot() {
       // This allows you to assure that all the data you send makes it into
       // the send FIFO.
       //
-      SSIDataPut(SSI2_BASE, dshotPacket[ui32Index]);
+      SSIDataPut(SSI0_BASE, dshotPacket[ui32Index]);
   }
 
   //
   // Wait until SSI0 is done transferring all the data in the transmit FIFO.
   //
-  while(SSIBusy(SSI2_BASE))
+  while(SSIBusy(SSI0_BASE))
   {
   }
 
