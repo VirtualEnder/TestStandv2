@@ -11,10 +11,10 @@ Voltage Sensor:              Pin 27 or PE_1 - I/O Board AY
 Current Sensor:              Pin 28 or PE_2 - I/O Board AX
 Load Cell Amp HX711.DOUT     Pin 38 or PB_3 - I/O Board A6
               HX711.PD_SCK   Pin 19 or PB_2 - I/O BOard A7
-M1 RPMs                      Pin 32 or PD_7 - I/O BOard B4
-M2 RPMs                      Pin 33 or PD_6 - I/O BOard B5
-M3 RPMs                      Pin 34 or PC_7 - I/O BOard B6
-M4 RPMs                      Pin 35 or PC_6 - I/O BOard B7
+M1 RPMs                      Pin 32 or PD_7 - I/O BOard B7
+M2 RPMs                      Pin 33 or PD_6 - I/O BOard B6
+M3 RPMs                      Pin 34 or PC_7 - I/O BOard B5
+M4 RPMs                      Pin 35 or PC_6 - I/O BOard B4
 
 Hardware PWM output adapted from: http://codeandlife.com/2012/10/30/stellaris-launchpad-pwm-tutorial/
 Stellaris timer code adapted from:  http://patolin.com/blog/2014/06/29/stellaris-launchpad-energia-pt-2-timers/
@@ -59,7 +59,7 @@ void setup() {
   
   // attach Interupt for RPM sensor
 
-    int rpmPins[] = {31,33,34,35};
+    int rpmPins[] = {32,33,34,35};
     void (*rpmFunctions[4])() {rpmTrigger1,rpmTrigger2,rpmTrigger3,rpmTrigger4};
     for (int i = 0; i < USE_MOTORS; i++) {
       pinMode(rpmPins[i], INPUT_PULLUP);
