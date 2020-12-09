@@ -115,7 +115,7 @@ void loop() {
 
   // Prompt for input and read it
   Serial.println("Type: t(Tare), v(Battery Voltage), w(Load Cell), c(Calibrate),");
-  Serial.println("      k(KV Test), m(Main Test), i(Idle) or z(Custom)");
+  Serial.println("      k(KV Test), m(Main Test), i(Idle), r(RPM Only Test) or z(Custom)");
   input="";
   while(!Serial.available());
   while(Serial.available()) {
@@ -140,6 +140,9 @@ void loop() {
   } else
   if(input.indexOf("m") >= 0) {
     mainTest();
+  } else
+  if(input.indexOf("r") >= 0) {
+    rpmTest();
   } else
   if(input.indexOf("v") >= 0) {
     returnVoltage();

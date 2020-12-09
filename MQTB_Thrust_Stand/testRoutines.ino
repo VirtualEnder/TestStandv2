@@ -419,6 +419,151 @@ void kvTest() {
 
  /*
  ################################
+ #    RPM Only Test Routine     #
+ ################################
+ */
+
+void rpmTest() {
+
+  delay(20);
+  Serial.println("Begining automated braking test, press any key to exit");
+  delay(2000);
+
+  isTestRunning = true;
+  uint16_t escMicros = MINCOMMAND;
+  uint16_t minRPMThrottle = 0;
+  uint16_t maxRPMThrottle = 0;
+  Average<uint16_t> avgRPMs(BRAKERPMSAMPLE);
+
+  Serial.println("Calibrating Braking RPMs");
+  delay(1000);
+  escMicros = MINTHROTTLE;
+  updatePWM(escMicros);
+  delay(2000);
+
+  startTime=micros();
+  while(!Serial.available() && isTestRunning) {
+
+    loopStart = micros();
+    uint32_t currentLoopTime = loopStart-startTime;
+    if (currentLoopTime <= 0) {
+      currentLoopTime = 1;
+    }
+    if(currentLoopTime<6000000)
+      // Iterate through whole throttle range based on time
+      escMicros = (((float)(currentLoopTime)/6000000.0)*(2000-MINTHROTTLE))+ MINTHROTTLE;
+    else if(currentLoopTime<=7000000)
+      escMicros = MINCOMMAND;
+    else {
+      isTestRunning = false;
+      isTared = false;
+    }
+    if(escMicros != currentMicros) {
+      updatePWM(escMicros);
+      currentMicros = escMicros;
+    }
+    for (uint8_t i = 0; i < BRAKERPMSAMPLE; i++) {
+      delayMicroseconds(200);
+      avgRPMs.push(stepDiff[1]);
+    }
+    float thisAvg = calculateRPMs(avgRPMs.mean(), false);
+    avgRPMs.clear();
+    uint16_t thisLoop = micros() - loopStart;
+    /*Serial.print("Average : ");
+     Serial.println(thisAvg);
+     Serial.print("Throttle: ");
+     Serial.println(escMicros);*/
+    if(thisAvg > BRAKEMINRPM && minRPMThrottle == 0) {
+      minRPMThrottle = currentMicros;
+    }
+    if(thisAvg > BRAKEMAXRPM && maxRPMThrottle == 0) {
+      maxRPMThrottle = currentMicros;
+    }
+  }
+
+  if (minRPMThrottle > 0 && maxRPMThrottle > 0) {
+    scale.tare();
+    Serial.println("Beginning Brake test:");
+    Serial.print("Low Throttle: ");
+    Serial.print(minRPMThrottle);
+    Serial.print(" High Throttle: ");
+    Serial.println(maxRPMThrottle);
+    Serial.print("Low RPM Target: ");
+    Serial.print(BRAKEMINRPM);
+    Serial.print(" High RPM Target: ");
+    Serial.println(BRAKEMAXRPM);
+
+    delay(2000);
+
+    // Print CSV header output
+    Serial.print("Time(uS),");
+    Serial.print("Throttle(uS),");
+    Serial.print("Steps,");
+    Serial.println("RPMs");
+
+    // Initiate test run
+    startTime=micros();
+    isTestRunning = true;
+    escMicros = MINCOMMAND;
+
+    while(!Serial.available() && isTestRunning ) {
+      loopStart = micros();
+      uint32_t currentLoopTime = loopStart-startTime;
+      if(currentLoopTime<2000000)
+        escMicros = minRPMThrottle;
+      else if(currentLoopTime<4000000)
+        escMicros = maxRPMThrottle;
+      else if(currentLoopTime<6000000)
+        escMicros = minRPMThrottle;
+      else if(currentLoopTime<8000000)
+        escMicros = MINCOMMAND;
+      else {
+        // End test and reset variables
+        minRPMThrottle = 0;
+        maxRPMThrottle = 0;
+        isTared = false;
+        isTestRunning = false;
+      }
+      if(escMicros != currentMicros) {
+        updatePWM(escMicros);
+        currentMicros = escMicros;
+      }
+
+      // Grab RPM calculations from last step times.
+      theseRpms[1] = calculateRPMs(stepDiff[1]);
+
+      // If no steps have happened in 100ms reset rpms to 0
+      // This means that the minimum RPMs the code is capable of detecting is
+      // 600 RPMs.  This shouldn't matter as pretty much every ESC starts out minimum
+      // at about 2000 rpms.
+      if(stepTime[1] > 100000) {
+        theseRpms[1] = 0;
+        avgStepDiff[1].push(0);
+      }
+
+      // Print out data
+      Serial.print(currentLoopTime);
+      Serial.print(",");
+      Serial.print(escMicros);
+      Serial.print(",");
+      Serial.print(stepCount[1]);
+      Serial.print(",");
+      Serial.println(theseRpms[1]);
+
+    }
+  } 
+  else {
+    Serial.println("Throttle positions for target RPMs could not be acquired, aborting test!");
+  }
+  while(Serial.available()) {
+    character = Serial.read();
+    delay(1);
+  }
+}
+
+
+ /*
+ ################################
  #     Custom test Routine      #
  ################################
  */
