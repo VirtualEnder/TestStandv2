@@ -426,7 +426,7 @@ void kvTest() {
 void rpmTest() {
 
   delay(20);
-  Serial.println("Begining automated braking test, press any key to exit");
+  Serial.println("Begining automated RPM test, press any key to exit");
   delay(2000);
 
   isTestRunning = true;
@@ -435,7 +435,7 @@ void rpmTest() {
   uint16_t maxRPMThrottle = 0;
   Average<uint16_t> avgRPMs(BRAKERPMSAMPLE);
 
-  Serial.println("Calibrating Braking RPMs");
+  Serial.println("Calibrating throttle RPMs range");
   delay(1000);
   escMicros = MINTHROTTLE;
   updatePWM(escMicros);
@@ -466,7 +466,8 @@ void rpmTest() {
       delayMicroseconds(200);
       avgRPMs.push(stepDiff[1]);
     }
-    float thisAvg = calculateRPMs(avgRPMs.mean(), false);
+    float thisAvg = calculateRPMs(avgRPMs.mean(),1, false);
+    
     avgRPMs.clear();
     uint16_t thisLoop = micros() - loopStart;
     /*Serial.print("Average : ");
@@ -483,7 +484,7 @@ void rpmTest() {
 
   if (minRPMThrottle > 0 && maxRPMThrottle > 0) {
     scale.tare();
-    Serial.println("Beginning Brake test:");
+    Serial.println("Beginning RPM test:");
     Serial.print("Low Throttle: ");
     Serial.print(minRPMThrottle);
     Serial.print(" High Throttle: ");
