@@ -187,10 +187,20 @@ void updatePWM(unsigned pulseWidth, unsigned pwmOutput) {
   }
 }
 
+void attachRPMInterrupts() {
+    void (*rpmFunctions[5])() {NULL,rpmTrigger1,rpmTrigger2,rpmTrigger3,rpmTrigger4};
+    for (int i = 1; i <= USE_MOTORS; i++) {
+      GPIOPinTypeGPIOInput(rpmPins[i][0], rpmPins[i][1]);
+      GPIOPadConfigSet(rpmPins[i][0], rpmPins[i][1],GPIO_STRENGTH_2MA,GPIO_PIN_TYPE_STD_WPU);
+      GPIOIntTypeSet(rpmPins[i][0], rpmPins[i][1],GPIO_FALLING_EDGE);
+      GPIOIntRegister(rpmPins[i][0],rpmFunctions[i]);
+    }
+}
+
 void initRPMCount() {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);  
   TimerConfigure(TIMER2_BASE, TIMER_CFG_PERIODIC); 
-  uint64_t ulPeriod = (SysCtlClockGet () / (1000000));
+  uint64_t ulPeriod = (SysCtlClockGet () / (1000000));  // Set period to one microsecond
   TimerLoadSet(TIMER2_BASE, TIMER_A, ulPeriod -1); 
   IntEnable(INT_TIMER2A); 
   TimerIntEnable(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 
@@ -202,7 +212,7 @@ void rpmTimer() {
   TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
   if(isTestRunning) {
       for(int i = 1; i<=USE_MOTORS; i++) {
-        stepTime[i]++;
+        stepTime[i]++;                                // Increment count every microsecond for active motors
       }
   }
 }

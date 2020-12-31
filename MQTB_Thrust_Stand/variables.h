@@ -8,6 +8,12 @@ HX711 scale(38, 19);
 HardwareSerial tlmSerial(1); //dShot serial
   
 // RPM input variables
+int rpmPins[5][2] = {{0,0},
+                     {GPIO_PORTD_BASE, GPIO_PIN_7},
+                     {GPIO_PORTF_BASE, GPIO_PIN_0},
+                     {GPIO_PORTC_BASE, GPIO_PIN_7},
+                     {GPIO_PORTA_BASE, GPIO_PIN_4}
+                    };
 volatile uint32_t stepCount[] = {0,0,0,0,0};
 volatile uint64_t stepTime[] = {0,0,0,0,0};
 volatile uint32_t stepDiff[] = {0,0,0,0,0};

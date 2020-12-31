@@ -14,6 +14,8 @@
 
 // Sensor and Motor configuration
 #define MOTOR_POLES        14     // Number of magnetic poles in test motor.
+#define RPM_OPTICAL        true   // Use optical code?
+#define STRIPE_COUNT       1      // Number of reflective stripes for the optical sensor
 
 //RPM calculation configuration
 #define USEAVG     true     // Use averaging on RPM calculations
