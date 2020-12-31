@@ -10,6 +10,12 @@ float getCurrent(int analogValue) {
 // RPM Count and calculations
 
 void countRpms (int inputID) {
+
+  // Clear Interrupts
+  uint32_t status=0;
+  status = GPIOIntStatus(rpmPins[inputID][0],true);
+  GPIOIntClear(rpmPins[inputID][0],status);
+  
   if(isTestRunning) {
     stepDiff[inputID] = stepTime[inputID];
     //save the value in a rotating array for averaging
@@ -19,6 +25,7 @@ void countRpms (int inputID) {
     stepTime[inputID] = 0;   // Reset step timer variable
     stepCount[inputID]++;    // Increase Step counter
   }
+  
 }
 
 void rpmTrigger1() {

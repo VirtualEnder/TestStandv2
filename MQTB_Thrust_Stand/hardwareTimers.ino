@@ -194,6 +194,7 @@ void attachRPMInterrupts() {
       GPIOPadConfigSet(rpmPins[i][0], rpmPins[i][1],GPIO_STRENGTH_2MA,GPIO_PIN_TYPE_STD_WPU);
       GPIOIntTypeSet(rpmPins[i][0], rpmPins[i][1],GPIO_FALLING_EDGE);
       GPIOIntRegister(rpmPins[i][0],rpmFunctions[i]);
+      GPIOIntEnable(rpmPins[i][0], rpmPins[i][1]);
     }
 }
 
